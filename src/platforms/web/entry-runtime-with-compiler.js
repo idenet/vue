@@ -1,19 +1,20 @@
 /* @flow */
 
 import config from 'core/config'
-import { warn, cached } from 'core/util/index'
+import { cached, warn } from 'core/util/index'
 import { mark, measure } from 'core/util/perf'
-
-import Vue from './runtime/index'
-import { query } from './util/index'
 import { compileToFunctions } from './compiler/index'
+import Vue from './runtime/index'
 import { shouldDecodeNewlines, shouldDecodeNewlinesForHref } from './util/compat'
+import { query } from './util/index'
+
 
 const idToTemplate = cached(id => {
   const el = query(id)
   return el && el.innerHTML
 })
 
+// 缓存 runtime/index.js 中的 $mount 方法
 const mount = Vue.prototype.$mount
 Vue.prototype.$mount = function (
   el?: string | Element,
@@ -61,7 +62,7 @@ Vue.prototype.$mount = function (
       if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
         mark('compile')
       }
-
+      // 通过compileToFunction 生成 render 和 静态render
       const { render, staticRenderFns } = compileToFunctions(template, {
         outputSourceRange: process.env.NODE_ENV !== 'production',
         shouldDecodeNewlines,
@@ -79,6 +80,7 @@ Vue.prototype.$mount = function (
       }
     }
   }
+  // 调用mount
   return mount.call(this, el, hydrating)
 }
 
