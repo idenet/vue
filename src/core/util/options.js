@@ -24,6 +24,7 @@ import { unicodeRegExp } from './lang'
  */
 const strats = config.optionMergeStrategies
 
+// const strats = Object.create(null)
 /**
  * 合并配置总结
  * 对于 el、propsData 选项使用默认的合并策略 defaultStrat。
@@ -39,9 +40,11 @@ const strats = config.optionMergeStrategies
 
 /**
  * Options with restrictions
+ * el 策略 非生产环境生效
  */
 if (process.env.NODE_ENV !== 'production') {
   strats.el = strats.propsData = function (parent, child, vm, key) {
+    // 子组件通过 vue.extend实例化，单其中的mergeOptions不会传vm
     if (!vm) {
       warn(
         `option "${key}" can only be used during instance ` +
@@ -96,7 +99,19 @@ export function mergeDataOrFn (
     // Vue.extend 不会传入vm
   if (!vm) {
     // in a Vue.extend merge, both should be functions
-      // 返回父类的dota选项
+    // 项是在调用 Vue.extend 函数时进行合并处理的，此时父子 data 选项都应该是函数
+      // 返回父类的data选项
+    /**
+     * const Parent = Vue.extend({
+  data: function () {
+    return {
+      test: 1
+    }
+  }
+})
+
+const Child = Parent.extend({})
+     */
     if (!childVal) {
       return parentVal
     }
@@ -127,7 +142,7 @@ export function mergeDataOrFn (
         ? parentVal.call(vm, vm)
         : parentVal
       if (instanceData) {
-        // 延迟执行，data 要在inject 和 props之后
+        // 延迟执行，data 要在inject 和 props之后, 这里传入的参数已经是纯对象了
         return mergeData(instanceData, defaultData)
       } else {
         return defaultData
@@ -142,6 +157,7 @@ strats.data = function (
   vm?: Component
 ): ?Function {
   if (!vm) {
+    // 子组件的data不是 function 直接报错
     if (childVal && typeof childVal !== 'function') {
       process.env.NODE_ENV !== 'production' && warn(
         'The "data" option should be a function ' +
@@ -154,7 +170,7 @@ strats.data = function (
     }
     return mergeDataOrFn(parentVal, childVal)
   }
-
+  // 正常new 传入的参数
   return mergeDataOrFn(parentVal, childVal, vm)
 }
 
@@ -341,6 +357,15 @@ export function validateComponentName (name: string) {
 /**
  * Ensure all props option syntax are normalized into the
  * Object-based format.
+ * props: {
+  someData1: {
+    type: Number
+  },
+  someData2: {
+    type: String,
+    default: ''
+  }
+}
  */
 function normalizeProps (options: Object, vm: ?Component) {
   const props = options.props
@@ -378,6 +403,10 @@ function normalizeProps (options: Object, vm: ?Component) {
 
 /**
  * Normalize all injections into Object-based format
+ * {
+  'data1': { from: 'data1' },
+  'data2': { from: 'data2' }
+}
  */
 function normalizeInject (options: Object, vm: ?Component) {
   const inject = options.inject
@@ -431,6 +460,7 @@ function assertObjectType (name: string, value: any, vm: ?Component) {
 /**
  * Merge two option objects into a new one.
  * Core utility used in both instantiation and inheritance.
+ * 合并两个选项对象为一个新的对象，这个函数在实例化和继承的时候都有用到
  */
 export function mergeOptions (
   parent: Object,
@@ -443,7 +473,7 @@ export function mergeOptions (
   }
 
   if (typeof child === 'function') {
-    // 如果传入是函数则，获取函数的静态属性赋值给child
+    // 如果传入是函数则，获取函数的静态属性赋值给child 即传入的是 Vue.extend 构造函数
     child = child.options
   }
 
@@ -458,7 +488,10 @@ export function mergeOptions (
   // but only if it is a raw options object that isn't
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
+  // 扩展和混合子选项
+  // 但前提是他不是一个原始对象
   if (!child._base) {
+    // 允许声明扩展另一个组件 (可以是一个简单的选项对象或构造函数)，而无需使用 Vue.extend。这主要是为了便于扩展单文件组件。
     if (child.extends) {
       parent = mergeOptions(parent, child.extends, vm)
     }
@@ -471,11 +504,12 @@ export function mergeOptions (
 
   const options = {}
   let key
+  // key : components directives filters  _base
   for (key in parent) {
     mergeField(key)
   }
   for (key in child) {
-    // 原型链上的不调用，在上一个已经调用过了
+    //如果 child 对象的键也在 parent 上出现，那么就不要再调用 mergeField 了，因为在上一个 for in 循环中已经调用过了，这就避免了重复调用
     if (!hasOwn(parent, key)) {
       mergeField(key)
     }

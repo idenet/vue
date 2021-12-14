@@ -17,6 +17,7 @@
     <button @click="reverse">reverse</button>
   </div>
   <script>
+    Vue.config.performance = true
     let vm = new Vue({
       el: '#app',
       data: {

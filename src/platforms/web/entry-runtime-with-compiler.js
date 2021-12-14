@@ -3,12 +3,13 @@
 import config from 'core/config'
 import { cached, warn } from 'core/util/index'
 import { mark, measure } from 'core/util/perf'
+// 从 ./compiler/index.js 文件导入 compileToFunctions
 import { compileToFunctions } from './compiler/index'
 import Vue from './runtime/index'
 import { shouldDecodeNewlines, shouldDecodeNewlinesForHref } from './util/compat'
 import { query } from './util/index'
 
-
+// 根据 id 获取元素的 innerHTML
 const idToTemplate = cached(id => {
   const el = query(id)
   return el && el.innerHTML
@@ -16,6 +17,7 @@ const idToTemplate = cached(id => {
 
 // 缓存 runtime/index.js 中的 $mount 方法
 const mount = Vue.prototype.$mount
+// 重写 Vue.prototype.$mount 方法
 Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
@@ -55,6 +57,9 @@ Vue.prototype.$mount = function (
         return this
       }
     } else if (el) {
+      /**
+        * 获取元素的 outerHTML
+      */
       template = getOuterHTML(el)
     }
     if (template) {
@@ -97,7 +102,7 @@ function getOuterHTML (el: Element): string {
     return container.innerHTML
   }
 }
-
+// 在 Vue 上添加一个全局API `Vue.compile` 其值为上面导入进来的 compileToFunctions
 Vue.compile = compileToFunctions
 
 export default Vue

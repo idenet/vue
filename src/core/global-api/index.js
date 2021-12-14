@@ -45,16 +45,29 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   Vue.delete = del
   Vue.nextTick = nextTick
 
+
+
   // 2.6 explicit observable API
   Vue.observable = <T>(obj: T): T => {
     observe(obj)
     return obj
   }
 
+
+
   Vue.options = Object.create(null)
   ASSET_TYPES.forEach(type => {
     Vue.options[type + 's'] = Object.create(null)
-  })
+    })
+
+    /**
+   * Vue.options = {
+	components: Object.create(null),
+	directives: Object.create(null),
+	filters: Object.create(null),
+	_base: Vue
+}
+   */
 
   // this is used to identify the "base" constructor to extend all plain-object
   // components with in Weex's multi-instance scenarios.
@@ -67,3 +80,5 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   initExtend(Vue)
   initAssetRegisters(Vue)
 }
+
+

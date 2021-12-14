@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="../../dist/vue.js"></script>
+</head>
+
+<body>
+  <div id="app">
+
+  </div>
+  <script>
+// 创建子类
+const Sub = Vue.extend({
+  created: function () {
+    console.log('parentVal')
+  },
+  // 检测 test 的变化
+  watch: {
+    test: function () {
+      console.log('extend: test change')
+    }
+  }
+})
+
+// 使用子类创建实例
+const v = new Sub({
+  el: '#app',
+  data: {
+    test: 1
+  },
+  created: function () {
+    console.log('childVal')
+  },
+  // 检测 test 的变化
+  watch: {
+    test: function () {
+      console.log('instance: test change')
+    }
+  }
+})
+console.log(v.$options)
+// 修改 test 的值
+v.test = 2
+  </script>
+</body>
+
+</html>

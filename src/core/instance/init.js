@@ -1,14 +1,14 @@
 /* @flow */
 
 import config from '../config'
-import { initProxy } from './proxy'
-import { initState } from './state'
-import { initRender } from './render'
-import { initEvents } from './events'
+import { extend, formatComponentName, mergeOptions } from '../util/index'
 import { mark, measure } from '../util/perf'
-import { initLifecycle, callHook } from './lifecycle'
-import { initProvide, initInjections } from './inject'
-import { extend, mergeOptions, formatComponentName } from '../util/index'
+import { initEvents } from './events'
+import { initInjections, initProvide } from './inject'
+import { callHook, initLifecycle } from './lifecycle'
+import { initProxy } from './proxy'
+import { initRender } from './render'
+import { initState } from './state'
 
 let uid = 0
 
@@ -20,6 +20,7 @@ export function initMixin (Vue: Class<Component>) {
 
     let startTag, endTag
     /* istanbul ignore if */
+    // 开始性能检测
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
       startTag = `vue-perf-start:${vm._uid}`
       endTag = `vue-perf-end:${vm._uid}`
@@ -27,16 +28,20 @@ export function initMixin (Vue: Class<Component>) {
     }
 
     // a flag to avoid this being observed
+    // 确定当前是 Vue实例
     vm._isVue = true
     // merge options
     if (options && options._isComponent) {
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
       // internal component options needs special treatment.
+      // 创建组件时才会用到
       initInternalComponent(vm, options)
     } else {
+      // 合并选项并赋值给 $options
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
+        // 用户传进来的options 或者为空
         options || {},
         vm
       )
@@ -59,6 +64,7 @@ export function initMixin (Vue: Class<Component>) {
     callHook(vm, 'created')
 
     /* istanbul ignore if */
+    // 结束性能检测
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
       vm._name = formatComponentName(vm, false)
       mark(endTag)
@@ -90,7 +96,24 @@ export function initInternalComponent (vm: Component, options: InternalComponent
   }
 }
 
+/**
+ * Vue.options = {
+	components: {
+		KeepAlive
+		Transition,
+    	TransitionGroup
+	},
+	directives:{
+	    model,
+        show
+	},
+	filters: Object.create(null),
+	_base: Vue
+}
+ */
+// 解析构造函数的 options
 export function resolveConstructorOptions (Ctor: Class<Component>) {
+  // Vue.otpions | 子类options const Sub = Vue.extend() const s = new Sub()
   let options = Ctor.options
   if (Ctor.super) {
     const superOptions = resolveConstructorOptions(Ctor.super)

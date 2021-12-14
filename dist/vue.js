@@ -1164,6 +1164,19 @@
   var strats = config.optionMergeStrategies;
 
   /**
+   * 合并配置总结
+   * 对于 el、propsData 选项使用默认的合并策略 defaultStrat。
+   * 对于 data 选项，使用 mergeDataOrFn 函数进行处理，最终结果是 data 选项将变成一个函数，且该函数的执行结果为真正的数据对象。
+   * 对于 生命周期钩子 选项，将合并成数组，使得父子选项中的钩子函数都能够被执行
+   * 对于 directives、filters 以及 components 等资源选项，父子选项将以原型链的形式被处理，正是因为这样我们才能够在任何地方都使用内置组件、指令等
+   * 对于 watch 选项的合并处理，类似于生命周期钩子，如果父子选项都有相同的观测字段，将被合并为数组，这样观察者都将被执行。
+   * 对于 props、methods、inject、computed 选项，父选项始终可用，但是子选项会覆盖同名的父选项字段。
+   * 对于 provide 选项，其合并策略使用与 data 选项相同的 mergeDataOrFn 函数。
+   * 最后，以上没有提及到的选项都将使默认选项 defaultStrat。
+   * 最最后，默认合并策略函数 defaultStrat 的策略是：只要子选项不是 undefined 就使用子选项，否则使用父选项。
+   */
+
+  /**
    * Options with restrictions
    */
   {
@@ -1286,6 +1299,11 @@
 
   /**
    * Hooks and props are merged as arrays.
+   * options.created = [
+    function () {
+      console.log('created')
+    }
+  ]
    */
   function mergeHook (
     parentVal,
@@ -1294,6 +1312,7 @@
     var res = childVal
       ? parentVal
         ? parentVal.concat(childVal)
+        // 可传入 数组的 hooks
         : Array.isArray(childVal)
           ? childVal
           : [childVal]
@@ -1302,7 +1321,7 @@
       ? dedupeHooks(res)
       : res
   }
-
+  // 去重操作
   function dedupeHooks (hooks) {
     var res = [];
     for (var i = 0; i < hooks.length; i++) {
@@ -1323,6 +1342,16 @@
    * When a vm is present (instance creation), we need to do
    * a three-way merge between constructor options, instance
    * options and parent options.
+   *
+   * res = {
+    ChildComponent
+    // 原型
+    __proto__: {
+      KeepAlive,
+      Transition,
+      TransitionGroup
+    }
+  }
    */
   function mergeAssets (
     parentVal,
@@ -1333,6 +1362,7 @@
     var res = Object.create(parentVal || null);
     if (childVal) {
       assertObjectType(key, childVal, vm);
+      // 合并res 和 childval
       return extend(res, childVal)
     } else {
       return res
@@ -1356,6 +1386,7 @@
     key
   ) {
     // work around Firefox's Object.prototype.watch...
+    // 重置浏览器中的watch选项
     if (parentVal === nativeWatch) { parentVal = undefined; }
     if (childVal === nativeWatch) { childVal = undefined; }
     /* istanbul ignore if */
@@ -1364,18 +1395,26 @@
       assertObjectType(key, childVal, vm);
     }
     if (!parentVal) { return childVal }
+    // 定义 ret 常量，其值为一个对象
     var ret = {};
+    // 将 parentVal 的属性混合到 ret 中，后面处理的都将是 ret 对象，最后返回的也是 ret 对象
     extend(ret, parentVal);
     for (var key$1 in childVal) {
+        // 由于遍历的是 childVal，所以 key 是子选项的 key，父选项中未必能获取到值，所以 parent 未必有值
       var parent = ret[key$1];
+       // child 是肯定有值的，因为遍历的就是 childVal 本身
       var child = childVal[key$1];
+        // 这个 if 分支的作用就是如果 parent 存在，就将其转为数组
       if (parent && !Array.isArray(parent)) {
         parent = [parent];
       }
       ret[key$1] = parent
-        ? parent.concat(child)
-        : Array.isArray(child) ? child : [child];
+         // 最后，如果 parent 存在，此时的 parent 应该已经被转为数组了，所以直接将 child concat 进去
+         ? parent.concat(child)
+         // 如果 parent 不存在，直接将 child 转为数组返回
+         : Array.isArray(child) ? child : [child];
     }
+    // 最后返回新的 ret 对象
     return ret
   };
 
@@ -1394,10 +1433,13 @@
     if (childVal && "development" !== 'production') {
       assertObjectType(key, childVal, vm);
     }
+    // parentVal 不存在的情况下直接返回 childVal
     if (!parentVal) { return childVal }
+    // 如果 parentVal 存在，则创建 ret 对象，然后分别将 parentVal 和 childVal 的属性混合到 ret 中，注意：由于 childVal 将覆盖 parentVal 的同名属性
     var ret = Object.create(null);
     extend(ret, parentVal);
     if (childVal) { extend(ret, childVal); }
+    // 最后返回 ret 对象。
     return ret
   };
   strats.provide = mergeDataOrFn;
@@ -1544,8 +1586,11 @@
       child = child.options;
     }
 
+    // 规范props 代码
     normalizeProps(child, vm);
+    // 规范化 inject 代码
     normalizeInject(child, vm);
+    // 规范化 directives
     normalizeDirectives(child);
 
     // Apply extends and mixins on the child options,
@@ -1569,11 +1614,13 @@
       mergeField(key);
     }
     for (key in child) {
+      // 原型链上的不调用，在上一个已经调用过了
       if (!hasOwn(parent, key)) {
         mergeField(key);
       }
     }
     function mergeField (key) {
+      // 当一个选项没有对应的策略函数时，使用默认策略
       var strat = strats[key] || defaultStrat;
       options[key] = strat(parent[key], child[key], vm, key);
     }
@@ -5789,131 +5836,6 @@
   var compile = ref.compile;
   var compileToFunctions = ref.compileToFunctions;
 
-  /* not type checking this file because flow doesn't play well with Proxy */
-
-  var initProxy;
-
-  {
-    var allowedGlobals = makeMap(
-      'Infinity,undefined,NaN,isFinite,isNaN,' +
-      'parseFloat,parseInt,decodeURI,decodeURIComponent,encodeURI,encodeURIComponent,' +
-      'Math,Number,Date,Array,Object,Boolean,String,RegExp,Map,Set,JSON,Intl,BigInt,' +
-      'require' // for Webpack/Browserify
-    );
-
-    var warnNonPresent = function (target, key) {
-      warn(
-        "Property or method \"" + key + "\" is not defined on the instance but " +
-        'referenced during render. Make sure that this property is reactive, ' +
-        'either in the data option, or for class-based components, by ' +
-        'initializing the property. ' +
-        'See: https://vuejs.org/v2/guide/reactivity.html#Declaring-Reactive-Properties.',
-        target
-      );
-    };
-
-    var warnReservedPrefix = function (target, key) {
-      warn(
-        "Property \"" + key + "\" must be accessed with \"$data." + key + "\" because " +
-        'properties starting with "$" or "_" are not proxied in the Vue instance to ' +
-        'prevent conflicts with Vue internals. ' +
-        'See: https://vuejs.org/v2/api/#data',
-        target
-      );
-    };
-
-    var hasProxy =
-      typeof Proxy !== 'undefined' && isNative(Proxy);
-
-    if (hasProxy) {
-      var isBuiltInModifier = makeMap('stop,prevent,self,ctrl,shift,alt,meta,exact');
-      config.keyCodes = new Proxy(config.keyCodes, {
-        set: function set (target, key, value) {
-          if (isBuiltInModifier(key)) {
-            warn(("Avoid overwriting built-in modifier in config.keyCodes: ." + key));
-            return false
-          } else {
-            target[key] = value;
-            return true
-          }
-        }
-      });
-    }
-
-    var hasHandler = {
-      has: function has (target, key) {
-        var has = key in target;
-        var isAllowed = allowedGlobals(key) ||
-          (typeof key === 'string' && key.charAt(0) === '_' && !(key in target.$data));
-        if (!has && !isAllowed) {
-          if (key in target.$data) { warnReservedPrefix(target, key); }
-          else { warnNonPresent(target, key); }
-        }
-        return has || !isAllowed
-      }
-    };
-
-    var getHandler = {
-      get: function get (target, key) {
-        if (typeof key === 'string' && !(key in target)) {
-          if (key in target.$data) { warnReservedPrefix(target, key); }
-          else { warnNonPresent(target, key); }
-        }
-        return target[key]
-      }
-    };
-
-    initProxy = function initProxy (vm) {
-      if (hasProxy) {
-        // determine which proxy handler to use
-        var options = vm.$options;
-        var handlers = options.render && options.render._withStripped
-          ? getHandler
-          : hasHandler;
-        vm._renderProxy = new Proxy(vm, handlers);
-      } else {
-        vm._renderProxy = vm;
-      }
-    };
-  }
-
-  /*  */
-
-  var seenObjects = new _Set();
-
-  /**
-   * Recursively traverse an object to evoke all converted
-   * getters, so that every nested property inside the object
-   * is collected as a "deep" dependency.
-   */
-  function traverse (val) {
-    _traverse(val, seenObjects);
-    seenObjects.clear();
-  }
-
-  function _traverse (val, seen) {
-    var i, keys;
-    var isA = Array.isArray(val);
-    if ((!isA && !isObject(val)) || Object.isFrozen(val) || val instanceof VNode) {
-      return
-    }
-    if (val.__ob__) {
-      var depId = val.__ob__.dep.id;
-      if (seen.has(depId)) {
-        return
-      }
-      seen.add(depId);
-    }
-    if (isA) {
-      i = val.length;
-      while (i--) { _traverse(val[i], seen); }
-    } else {
-      keys = Object.keys(val);
-      i = keys.length;
-      while (i--) { _traverse(val[keys[i]], seen); }
-    }
-  }
-
   /*  */
 
   var normalizeEvent = cached(function (name) {
@@ -6659,6 +6581,761 @@
 
   /*  */
 
+  var seenObjects = new _Set();
+
+  /**
+   * Recursively traverse an object to evoke all converted
+   * getters, so that every nested property inside the object
+   * is collected as a "deep" dependency.
+   */
+  function traverse (val) {
+    _traverse(val, seenObjects);
+    seenObjects.clear();
+  }
+
+  function _traverse (val, seen) {
+    var i, keys;
+    var isA = Array.isArray(val);
+    if ((!isA && !isObject(val)) || Object.isFrozen(val) || val instanceof VNode) {
+      return
+    }
+    if (val.__ob__) {
+      var depId = val.__ob__.dep.id;
+      if (seen.has(depId)) {
+        return
+      }
+      seen.add(depId);
+    }
+    if (isA) {
+      i = val.length;
+      while (i--) { _traverse(val[i], seen); }
+    } else {
+      keys = Object.keys(val);
+      i = keys.length;
+      while (i--) { _traverse(val[keys[i]], seen); }
+    }
+  }
+
+  /*  */
+
+  var MAX_UPDATE_COUNT = 100;
+
+  var queue = [];
+  var activatedChildren = [];
+  var has = {};
+  var circular = {};
+  var waiting = false;
+  var flushing = false;
+  var index$1 = 0;
+
+  /**
+   * Reset the scheduler's state.
+   */
+  function resetSchedulerState () {
+    index$1 = queue.length = activatedChildren.length = 0;
+    has = {};
+    {
+      circular = {};
+    }
+    waiting = flushing = false;
+  }
+
+  // Async edge case #6566 requires saving the timestamp when event listeners are
+  // attached. However, calling performance.now() has a perf overhead especially
+  // if the page has thousands of event listeners. Instead, we take a timestamp
+  // every time the scheduler flushes and use that for all event listeners
+  // attached during that flush.
+  var currentFlushTimestamp = 0;
+
+  // Async edge case fix requires storing an event listener's attach timestamp.
+  var getNow = Date.now;
+
+  // Determine what event timestamp the browser is using. Annoyingly, the
+  // timestamp can either be hi-res (relative to page load) or low-res
+  // (relative to UNIX epoch), so in order to compare time we have to use the
+  // same timestamp type when saving the flush timestamp.
+  // All IE versions use low-res event timestamps, and have problematic clock
+  // implementations (#9632)
+  if (inBrowser && !isIE) {
+    var performance = window.performance;
+    if (
+      performance &&
+      typeof performance.now === 'function' &&
+      getNow() > document.createEvent('Event').timeStamp
+    ) {
+      // if the event timestamp, although evaluated AFTER the Date.now(), is
+      // smaller than it, it means the event is using a hi-res timestamp,
+      // and we need to use the hi-res version for event listener timestamps as
+      // well.
+      getNow = function () { return performance.now(); };
+    }
+  }
+
+  /**
+   * Flush both queues and run the watchers.
+   */
+  function flushSchedulerQueue () {
+    currentFlushTimestamp = getNow();
+    flushing = true;
+    var watcher, id;
+
+    // Sort queue before flush.
+    // This ensures that:
+    // 1. Components are updated from parent to child. (because parent is always
+    //    created before the child)
+    // 2. A component's user watchers are run before its render watcher (because
+    //    user watchers are created before the render watcher)
+    // 3. If a component is destroyed during a parent component's watcher run,
+    //    its watchers can be skipped.
+    queue.sort(function (a, b) { return a.id - b.id; });
+
+    // do not cache length because more watchers might be pushed
+    // as we run existing watchers
+    for (index$1 = 0; index$1 < queue.length; index$1++) {
+      watcher = queue[index$1];
+      if (watcher.before) {
+        watcher.before();
+      }
+      id = watcher.id;
+      has[id] = null;
+      watcher.run();
+      // in dev build, check and stop circular updates.
+      if (has[id] != null) {
+        circular[id] = (circular[id] || 0) + 1;
+        if (circular[id] > MAX_UPDATE_COUNT) {
+          warn(
+            'You may have an infinite update loop ' + (
+              watcher.user
+                ? ("in watcher with expression \"" + (watcher.expression) + "\"")
+                : "in a component render function."
+            ),
+            watcher.vm
+          );
+          break
+        }
+      }
+    }
+
+    // keep copies of post queues before resetting state
+    var activatedQueue = activatedChildren.slice();
+    var updatedQueue = queue.slice();
+
+    resetSchedulerState();
+
+    // call component updated and activated hooks
+    callActivatedHooks(activatedQueue);
+    callUpdatedHooks(updatedQueue);
+
+    // devtool hook
+    /* istanbul ignore if */
+    if (devtools && config.devtools) {
+      devtools.emit('flush');
+    }
+  }
+
+  function callUpdatedHooks (queue) {
+    var i = queue.length;
+    while (i--) {
+      var watcher = queue[i];
+      var vm = watcher.vm;
+      if (vm._watcher === watcher && vm._isMounted && !vm._isDestroyed) {
+        callHook(vm, 'updated');
+      }
+    }
+  }
+
+  /**
+   * Queue a kept-alive component that was activated during patch.
+   * The queue will be processed after the entire tree has been patched.
+   */
+  function queueActivatedComponent (vm) {
+    // setting _inactive to false here so that a render function can
+    // rely on checking whether it's in an inactive tree (e.g. router-view)
+    vm._inactive = false;
+    activatedChildren.push(vm);
+  }
+
+  function callActivatedHooks (queue) {
+    for (var i = 0; i < queue.length; i++) {
+      queue[i]._inactive = true;
+      activateChildComponent(queue[i], true /* true */);
+    }
+  }
+
+  /**
+   * Push a watcher into the watcher queue.
+   * Jobs with duplicate IDs will be skipped unless it's
+   * pushed when the queue is being flushed.
+   */
+  function queueWatcher (watcher) {
+    var id = watcher.id;
+    if (has[id] == null) {
+      has[id] = true;
+      if (!flushing) {
+        queue.push(watcher);
+      } else {
+        // if already flushing, splice the watcher based on its id
+        // if already past its id, it will be run next immediately.
+        var i = queue.length - 1;
+        while (i > index$1 && queue[i].id > watcher.id) {
+          i--;
+        }
+        queue.splice(i + 1, 0, watcher);
+      }
+      // queue the flush
+      if (!waiting) {
+        waiting = true;
+
+        if (!config.async) {
+          flushSchedulerQueue();
+          return
+        }
+        nextTick(flushSchedulerQueue);
+      }
+    }
+  }
+
+  /*  */
+
+
+
+  var uid$1 = 0;
+
+  /**
+   * A watcher parses an expression, collects dependencies,
+   * and fires callback when the expression value changes.
+   * This is used for both the $watch() api and directives.
+   */
+  var Watcher = function Watcher (
+    vm,
+    expOrFn,
+    cb,
+    options,
+    isRenderWatcher
+  ) {
+    this.vm = vm;
+    if (isRenderWatcher) {
+      vm._watcher = this;
+    }
+    vm._watchers.push(this);
+    // options
+    if (options) {
+      this.deep = !!options.deep;
+      this.user = !!options.user;
+      this.lazy = !!options.lazy;
+      this.sync = !!options.sync;
+      this.before = options.before;
+    } else {
+      this.deep = this.user = this.lazy = this.sync = false;
+    }
+    this.cb = cb;
+    this.id = ++uid$1; // uid for batching
+    this.active = true;
+    this.dirty = this.lazy; // for lazy watchers
+    this.deps = [];
+    this.newDeps = [];
+    this.depIds = new _Set();
+    this.newDepIds = new _Set();
+    this.expression = expOrFn.toString();
+    // parse expression for getter
+    if (typeof expOrFn === 'function') {
+      this.getter = expOrFn;
+    } else {
+      this.getter = parsePath(expOrFn);
+      if (!this.getter) {
+        this.getter = noop;
+        warn(
+          "Failed watching path: \"" + expOrFn + "\" " +
+          'Watcher only accepts simple dot-delimited paths. ' +
+          'For full control, use a function instead.',
+          vm
+        );
+      }
+    }
+    this.value = this.lazy
+      ? undefined
+      : this.get();
+  };
+
+  /**
+   * Evaluate the getter, and re-collect dependencies.
+   */
+  Watcher.prototype.get = function get () {
+    pushTarget(this);
+    var value;
+    var vm = this.vm;
+    try {
+      value = this.getter.call(vm, vm);
+    } catch (e) {
+      if (this.user) {
+        handleError(e, vm, ("getter for watcher \"" + (this.expression) + "\""));
+      } else {
+        throw e
+      }
+    } finally {
+      // "touch" every property so they are all tracked as
+      // dependencies for deep watching
+      if (this.deep) {
+        traverse(value);
+      }
+      popTarget();
+      this.cleanupDeps();
+    }
+    return value
+  };
+
+  /**
+   * Add a dependency to this directive.
+   */
+  Watcher.prototype.addDep = function addDep (dep) {
+    var id = dep.id;
+    if (!this.newDepIds.has(id)) {
+      this.newDepIds.add(id);
+      this.newDeps.push(dep);
+      if (!this.depIds.has(id)) {
+        dep.addSub(this);
+      }
+    }
+  };
+
+  /**
+   * Clean up for dependency collection.
+   */
+  Watcher.prototype.cleanupDeps = function cleanupDeps () {
+    var i = this.deps.length;
+    while (i--) {
+      var dep = this.deps[i];
+      if (!this.newDepIds.has(dep.id)) {
+        dep.removeSub(this);
+      }
+    }
+    var tmp = this.depIds;
+    this.depIds = this.newDepIds;
+    this.newDepIds = tmp;
+    this.newDepIds.clear();
+    tmp = this.deps;
+    this.deps = this.newDeps;
+    this.newDeps = tmp;
+    this.newDeps.length = 0;
+  };
+
+  /**
+   * Subscriber interface.
+   * Will be called when a dependency changes.
+   */
+  Watcher.prototype.update = function update () {
+    /* istanbul ignore else */
+    if (this.lazy) {
+      this.dirty = true;
+    } else if (this.sync) {
+      this.run();
+    } else {
+      queueWatcher(this);
+    }
+  };
+
+  /**
+   * Scheduler job interface.
+   * Will be called by the scheduler.
+   */
+  Watcher.prototype.run = function run () {
+    if (this.active) {
+      var value = this.get();
+      if (
+        value !== this.value ||
+        // Deep watchers and watchers on Object/Arrays should fire even
+        // when the value is the same, because the value may
+        // have mutated.
+        isObject(value) ||
+        this.deep
+      ) {
+        // set new value
+        var oldValue = this.value;
+        this.value = value;
+        if (this.user) {
+          var info = "callback for watcher \"" + (this.expression) + "\"";
+          invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info);
+        } else {
+          this.cb.call(this.vm, value, oldValue);
+        }
+      }
+    }
+  };
+
+  /**
+   * Evaluate the value of the watcher.
+   * This only gets called for lazy watchers.
+   */
+  Watcher.prototype.evaluate = function evaluate () {
+    this.value = this.get();
+    this.dirty = false;
+  };
+
+  /**
+   * Depend on all deps collected by this watcher.
+   */
+  Watcher.prototype.depend = function depend () {
+    var i = this.deps.length;
+    while (i--) {
+      this.deps[i].depend();
+    }
+  };
+
+  /**
+   * Remove self from all dependencies' subscriber list.
+   */
+  Watcher.prototype.teardown = function teardown () {
+    if (this.active) {
+      // remove self from vm's watcher list
+      // this is a somewhat expensive operation so we skip it
+      // if the vm is being destroyed.
+      if (!this.vm._isBeingDestroyed) {
+        remove(this.vm._watchers, this);
+      }
+      var i = this.deps.length;
+      while (i--) {
+        this.deps[i].removeSub(this);
+      }
+      this.active = false;
+    }
+  };
+
+  /*  */
+
+  var activeInstance = null;
+  var isUpdatingChildComponent = false;
+
+  function setActiveInstance(vm) {
+    var prevActiveInstance = activeInstance;
+    activeInstance = vm;
+    return function () {
+      activeInstance = prevActiveInstance;
+    }
+  }
+
+  function initLifecycle (vm) {
+    var options = vm.$options;
+
+    // locate first non-abstract parent
+    var parent = options.parent;
+    if (parent && !options.abstract) {
+      while (parent.$options.abstract && parent.$parent) {
+        parent = parent.$parent;
+      }
+      parent.$children.push(vm);
+    }
+
+    vm.$parent = parent;
+    vm.$root = parent ? parent.$root : vm;
+
+    vm.$children = [];
+    vm.$refs = {};
+
+    vm._watcher = null;
+    vm._inactive = null;
+    vm._directInactive = false;
+    vm._isMounted = false;
+    vm._isDestroyed = false;
+    vm._isBeingDestroyed = false;
+  }
+
+  function lifecycleMixin (Vue) {
+    Vue.prototype._update = function (vnode, hydrating) {
+      var vm = this;
+      var prevEl = vm.$el;
+      var prevVnode = vm._vnode;
+      var restoreActiveInstance = setActiveInstance(vm);
+      vm._vnode = vnode;
+      // Vue.prototype.__patch__ is injected in entry points
+      // based on the rendering backend used.
+      if (!prevVnode) {
+        // initial render
+        vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */);
+      } else {
+        // updates
+        vm.$el = vm.__patch__(prevVnode, vnode);
+      }
+      restoreActiveInstance();
+      // update __vue__ reference
+      if (prevEl) {
+        prevEl.__vue__ = null;
+      }
+      if (vm.$el) {
+        vm.$el.__vue__ = vm;
+      }
+      // if parent is an HOC, update its $el as well
+      if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
+        vm.$parent.$el = vm.$el;
+      }
+      // updated hook is called by the scheduler to ensure that children are
+      // updated in a parent's updated hook.
+    };
+
+    Vue.prototype.$forceUpdate = function () {
+      var vm = this;
+      if (vm._watcher) {
+        vm._watcher.update();
+      }
+    };
+
+    Vue.prototype.$destroy = function () {
+      var vm = this;
+      if (vm._isBeingDestroyed) {
+        return
+      }
+      callHook(vm, 'beforeDestroy');
+      vm._isBeingDestroyed = true;
+      // remove self from parent
+      var parent = vm.$parent;
+      if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) {
+        remove(parent.$children, vm);
+      }
+      // teardown watchers
+      if (vm._watcher) {
+        vm._watcher.teardown();
+      }
+      var i = vm._watchers.length;
+      while (i--) {
+        vm._watchers[i].teardown();
+      }
+      // remove reference from data ob
+      // frozen object may not have observer.
+      if (vm._data.__ob__) {
+        vm._data.__ob__.vmCount--;
+      }
+      // call the last hook...
+      vm._isDestroyed = true;
+      // invoke destroy hooks on current rendered tree
+      vm.__patch__(vm._vnode, null);
+      // fire destroyed hook
+      callHook(vm, 'destroyed');
+      // turn off all instance listeners.
+      vm.$off();
+      // remove __vue__ reference
+      if (vm.$el) {
+        vm.$el.__vue__ = null;
+      }
+      // release circular reference (#6759)
+      if (vm.$vnode) {
+        vm.$vnode.parent = null;
+      }
+    };
+  }
+
+  function mountComponent (
+    vm,
+    el,
+    hydrating
+  ) {
+    vm.$el = el;
+    if (!vm.$options.render) {
+      vm.$options.render = createEmptyVNode;
+      {
+        /* istanbul ignore if */
+        if ((vm.$options.template && vm.$options.template.charAt(0) !== '#') ||
+          vm.$options.el || el) {
+          warn(
+            'You are using the runtime-only build of Vue where the template ' +
+            'compiler is not available. Either pre-compile the templates into ' +
+            'render functions, or use the compiler-included build.',
+            vm
+          );
+        } else {
+          warn(
+            'Failed to mount component: template or render function not defined.',
+            vm
+          );
+        }
+      }
+    }
+    callHook(vm, 'beforeMount');
+
+    var updateComponent;
+    /* istanbul ignore if */
+    if (config.performance && mark) {
+      updateComponent = function () {
+        var name = vm._name;
+        var id = vm._uid;
+        var startTag = "vue-perf-start:" + id;
+        var endTag = "vue-perf-end:" + id;
+
+        mark(startTag);
+        var vnode = vm._render();
+        mark(endTag);
+        measure(("vue " + name + " render"), startTag, endTag);
+
+        mark(startTag);
+        vm._update(vnode, hydrating);
+        mark(endTag);
+        measure(("vue " + name + " patch"), startTag, endTag);
+      };
+    } else {
+      updateComponent = function () {
+        vm._update(vm._render(), hydrating);
+      };
+    }
+
+    // we set this to vm._watcher inside the watcher's constructor
+    // since the watcher's initial patch may call $forceUpdate (e.g. inside child
+    // component's mounted hook), which relies on vm._watcher being already defined
+    new Watcher(vm, updateComponent, noop, {
+      before: function before () {
+        if (vm._isMounted && !vm._isDestroyed) {
+          callHook(vm, 'beforeUpdate');
+        }
+      }
+    }, true /* isRenderWatcher */);
+    hydrating = false;
+
+    // manually mounted instance, call mounted on self
+    // mounted is called for render-created child components in its inserted hook
+    if (vm.$vnode == null) {
+      vm._isMounted = true;
+      callHook(vm, 'mounted');
+    }
+    return vm
+  }
+
+  function updateChildComponent (
+    vm,
+    propsData,
+    listeners,
+    parentVnode,
+    renderChildren
+  ) {
+    {
+      isUpdatingChildComponent = true;
+    }
+
+    // determine whether component has slot children
+    // we need to do this before overwriting $options._renderChildren.
+
+    // check if there are dynamic scopedSlots (hand-written or compiled but with
+    // dynamic slot names). Static scoped slots compiled from template has the
+    // "$stable" marker.
+    var newScopedSlots = parentVnode.data.scopedSlots;
+    var oldScopedSlots = vm.$scopedSlots;
+    var hasDynamicScopedSlot = !!(
+      (newScopedSlots && !newScopedSlots.$stable) ||
+      (oldScopedSlots !== emptyObject && !oldScopedSlots.$stable) ||
+      (newScopedSlots && vm.$scopedSlots.$key !== newScopedSlots.$key) ||
+      (!newScopedSlots && vm.$scopedSlots.$key)
+    );
+
+    // Any static slot children from the parent may have changed during parent's
+    // update. Dynamic scoped slots may also have changed. In such cases, a forced
+    // update is necessary to ensure correctness.
+    var needsForceUpdate = !!(
+      renderChildren ||               // has new static slots
+      vm.$options._renderChildren ||  // has old static slots
+      hasDynamicScopedSlot
+    );
+
+    vm.$options._parentVnode = parentVnode;
+    vm.$vnode = parentVnode; // update vm's placeholder node without re-render
+
+    if (vm._vnode) { // update child tree's parent
+      vm._vnode.parent = parentVnode;
+    }
+    vm.$options._renderChildren = renderChildren;
+
+    // update $attrs and $listeners hash
+    // these are also reactive so they may trigger child update if the child
+    // used them during render
+    vm.$attrs = parentVnode.data.attrs || emptyObject;
+    vm.$listeners = listeners || emptyObject;
+
+    // update props
+    if (propsData && vm.$options.props) {
+      toggleObserving(false);
+      var props = vm._props;
+      var propKeys = vm.$options._propKeys || [];
+      for (var i = 0; i < propKeys.length; i++) {
+        var key = propKeys[i];
+        var propOptions = vm.$options.props; // wtf flow?
+        props[key] = validateProp(key, propOptions, propsData, vm);
+      }
+      toggleObserving(true);
+      // keep a copy of raw propsData
+      vm.$options.propsData = propsData;
+    }
+
+    // update listeners
+    listeners = listeners || emptyObject;
+    var oldListeners = vm.$options._parentListeners;
+    vm.$options._parentListeners = listeners;
+    updateComponentListeners(vm, listeners, oldListeners);
+
+    // resolve slots + force update if has children
+    if (needsForceUpdate) {
+      vm.$slots = resolveSlots(renderChildren, parentVnode.context);
+      vm.$forceUpdate();
+    }
+
+    {
+      isUpdatingChildComponent = false;
+    }
+  }
+
+  function isInInactiveTree (vm) {
+    while (vm && (vm = vm.$parent)) {
+      if (vm._inactive) { return true }
+    }
+    return false
+  }
+
+  function activateChildComponent (vm, direct) {
+    if (direct) {
+      vm._directInactive = false;
+      if (isInInactiveTree(vm)) {
+        return
+      }
+    } else if (vm._directInactive) {
+      return
+    }
+    if (vm._inactive || vm._inactive === null) {
+      vm._inactive = false;
+      for (var i = 0; i < vm.$children.length; i++) {
+        activateChildComponent(vm.$children[i]);
+      }
+      callHook(vm, 'activated');
+    }
+  }
+
+  function deactivateChildComponent (vm, direct) {
+    if (direct) {
+      vm._directInactive = true;
+      if (isInInactiveTree(vm)) {
+        return
+      }
+    }
+    if (!vm._inactive) {
+      vm._inactive = true;
+      for (var i = 0; i < vm.$children.length; i++) {
+        deactivateChildComponent(vm.$children[i]);
+      }
+      callHook(vm, 'deactivated');
+    }
+  }
+
+  function callHook (vm, hook) {
+    // #7573 disable dep collection when invoking lifecycle hooks
+    pushTarget();
+    var handlers = vm.$options[hook];
+    var info = hook + " hook";
+    if (handlers) {
+      for (var i = 0, j = handlers.length; i < j; i++) {
+        invokeWithErrorHandling(handlers[i], vm, null, vm, info);
+      }
+    }
+    if (vm._hasHookEvent) {
+      vm.$emit('hook:' + hook);
+    }
+    popTarget();
+  }
+
+  /*  */
+
   function initRender (vm) {
     vm._vnode = null; // the root of the child tree
     vm._staticTrees = null; // v-once cached trees
@@ -7066,721 +7743,159 @@
 
   /*  */
 
-  var activeInstance = null;
-  var isUpdatingChildComponent = false;
-
-  function setActiveInstance(vm) {
-    var prevActiveInstance = activeInstance;
-    activeInstance = vm;
-    return function () {
-      activeInstance = prevActiveInstance;
+  function initProvide (vm) {
+    var provide = vm.$options.provide;
+    if (provide) {
+      vm._provided = typeof provide === 'function'
+        ? provide.call(vm)
+        : provide;
     }
   }
 
-  function initLifecycle (vm) {
-    var options = vm.$options;
-
-    // locate first non-abstract parent
-    var parent = options.parent;
-    if (parent && !options.abstract) {
-      while (parent.$options.abstract && parent.$parent) {
-        parent = parent.$parent;
-      }
-      parent.$children.push(vm);
-    }
-
-    vm.$parent = parent;
-    vm.$root = parent ? parent.$root : vm;
-
-    vm.$children = [];
-    vm.$refs = {};
-
-    vm._watcher = null;
-    vm._inactive = null;
-    vm._directInactive = false;
-    vm._isMounted = false;
-    vm._isDestroyed = false;
-    vm._isBeingDestroyed = false;
-  }
-
-  function lifecycleMixin (Vue) {
-    Vue.prototype._update = function (vnode, hydrating) {
-      var vm = this;
-      var prevEl = vm.$el;
-      var prevVnode = vm._vnode;
-      var restoreActiveInstance = setActiveInstance(vm);
-      vm._vnode = vnode;
-      // Vue.prototype.__patch__ is injected in entry points
-      // based on the rendering backend used.
-      if (!prevVnode) {
-        // initial render
-        vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */);
-      } else {
-        // updates
-        vm.$el = vm.__patch__(prevVnode, vnode);
-      }
-      restoreActiveInstance();
-      // update __vue__ reference
-      if (prevEl) {
-        prevEl.__vue__ = null;
-      }
-      if (vm.$el) {
-        vm.$el.__vue__ = vm;
-      }
-      // if parent is an HOC, update its $el as well
-      if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
-        vm.$parent.$el = vm.$el;
-      }
-      // updated hook is called by the scheduler to ensure that children are
-      // updated in a parent's updated hook.
-    };
-
-    Vue.prototype.$forceUpdate = function () {
-      var vm = this;
-      if (vm._watcher) {
-        vm._watcher.update();
-      }
-    };
-
-    Vue.prototype.$destroy = function () {
-      var vm = this;
-      if (vm._isBeingDestroyed) {
-        return
-      }
-      callHook(vm, 'beforeDestroy');
-      vm._isBeingDestroyed = true;
-      // remove self from parent
-      var parent = vm.$parent;
-      if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) {
-        remove(parent.$children, vm);
-      }
-      // teardown watchers
-      if (vm._watcher) {
-        vm._watcher.teardown();
-      }
-      var i = vm._watchers.length;
-      while (i--) {
-        vm._watchers[i].teardown();
-      }
-      // remove reference from data ob
-      // frozen object may not have observer.
-      if (vm._data.__ob__) {
-        vm._data.__ob__.vmCount--;
-      }
-      // call the last hook...
-      vm._isDestroyed = true;
-      // invoke destroy hooks on current rendered tree
-      vm.__patch__(vm._vnode, null);
-      // fire destroyed hook
-      callHook(vm, 'destroyed');
-      // turn off all instance listeners.
-      vm.$off();
-      // remove __vue__ reference
-      if (vm.$el) {
-        vm.$el.__vue__ = null;
-      }
-      // release circular reference (#6759)
-      if (vm.$vnode) {
-        vm.$vnode.parent = null;
-      }
-    };
-  }
-
-  function mountComponent (
-    vm,
-    el,
-    hydrating
-  ) {
-    vm.$el = el;
-    if (!vm.$options.render) {
-      vm.$options.render = createEmptyVNode;
-      {
-        /* istanbul ignore if */
-        if ((vm.$options.template && vm.$options.template.charAt(0) !== '#') ||
-          vm.$options.el || el) {
-          warn(
-            'You are using the runtime-only build of Vue where the template ' +
-            'compiler is not available. Either pre-compile the templates into ' +
-            'render functions, or use the compiler-included build.',
-            vm
-          );
-        } else {
-          warn(
-            'Failed to mount component: template or render function not defined.',
-            vm
-          );
-        }
-      }
-    }
-    callHook(vm, 'beforeMount');
-
-    var updateComponent;
-    /* istanbul ignore if */
-    if (config.performance && mark) {
-      updateComponent = function () {
-        var name = vm._name;
-        var id = vm._uid;
-        var startTag = "vue-perf-start:" + id;
-        var endTag = "vue-perf-end:" + id;
-
-        mark(startTag);
-        var vnode = vm._render();
-        mark(endTag);
-        measure(("vue " + name + " render"), startTag, endTag);
-
-        mark(startTag);
-        vm._update(vnode, hydrating);
-        mark(endTag);
-        measure(("vue " + name + " patch"), startTag, endTag);
-      };
-    } else {
-      updateComponent = function () {
-        vm._update(vm._render(), hydrating);
-      };
-    }
-
-    // we set this to vm._watcher inside the watcher's constructor
-    // since the watcher's initial patch may call $forceUpdate (e.g. inside child
-    // component's mounted hook), which relies on vm._watcher being already defined
-    new Watcher(vm, updateComponent, noop, {
-      before: function before () {
-        if (vm._isMounted && !vm._isDestroyed) {
-          callHook(vm, 'beforeUpdate');
-        }
-      }
-    }, true /* isRenderWatcher */);
-    hydrating = false;
-
-    // manually mounted instance, call mounted on self
-    // mounted is called for render-created child components in its inserted hook
-    if (vm.$vnode == null) {
-      vm._isMounted = true;
-      callHook(vm, 'mounted');
-    }
-    return vm
-  }
-
-  function updateChildComponent (
-    vm,
-    propsData,
-    listeners,
-    parentVnode,
-    renderChildren
-  ) {
-    {
-      isUpdatingChildComponent = true;
-    }
-
-    // determine whether component has slot children
-    // we need to do this before overwriting $options._renderChildren.
-
-    // check if there are dynamic scopedSlots (hand-written or compiled but with
-    // dynamic slot names). Static scoped slots compiled from template has the
-    // "$stable" marker.
-    var newScopedSlots = parentVnode.data.scopedSlots;
-    var oldScopedSlots = vm.$scopedSlots;
-    var hasDynamicScopedSlot = !!(
-      (newScopedSlots && !newScopedSlots.$stable) ||
-      (oldScopedSlots !== emptyObject && !oldScopedSlots.$stable) ||
-      (newScopedSlots && vm.$scopedSlots.$key !== newScopedSlots.$key) ||
-      (!newScopedSlots && vm.$scopedSlots.$key)
-    );
-
-    // Any static slot children from the parent may have changed during parent's
-    // update. Dynamic scoped slots may also have changed. In such cases, a forced
-    // update is necessary to ensure correctness.
-    var needsForceUpdate = !!(
-      renderChildren ||               // has new static slots
-      vm.$options._renderChildren ||  // has old static slots
-      hasDynamicScopedSlot
-    );
-
-    vm.$options._parentVnode = parentVnode;
-    vm.$vnode = parentVnode; // update vm's placeholder node without re-render
-
-    if (vm._vnode) { // update child tree's parent
-      vm._vnode.parent = parentVnode;
-    }
-    vm.$options._renderChildren = renderChildren;
-
-    // update $attrs and $listeners hash
-    // these are also reactive so they may trigger child update if the child
-    // used them during render
-    vm.$attrs = parentVnode.data.attrs || emptyObject;
-    vm.$listeners = listeners || emptyObject;
-
-    // update props
-    if (propsData && vm.$options.props) {
+  function initInjections (vm) {
+    var result = resolveInject(vm.$options.inject, vm);
+    if (result) {
       toggleObserving(false);
-      var props = vm._props;
-      var propKeys = vm.$options._propKeys || [];
-      for (var i = 0; i < propKeys.length; i++) {
-        var key = propKeys[i];
-        var propOptions = vm.$options.props; // wtf flow?
-        props[key] = validateProp(key, propOptions, propsData, vm);
-      }
+      Object.keys(result).forEach(function (key) {
+        /* istanbul ignore else */
+        {
+          defineReactive$$1(vm, key, result[key], function () {
+            warn(
+              "Avoid mutating an injected value directly since the changes will be " +
+              "overwritten whenever the provided component re-renders. " +
+              "injection being mutated: \"" + key + "\"",
+              vm
+            );
+          });
+        }
+      });
       toggleObserving(true);
-      // keep a copy of raw propsData
-      vm.$options.propsData = propsData;
-    }
-
-    // update listeners
-    listeners = listeners || emptyObject;
-    var oldListeners = vm.$options._parentListeners;
-    vm.$options._parentListeners = listeners;
-    updateComponentListeners(vm, listeners, oldListeners);
-
-    // resolve slots + force update if has children
-    if (needsForceUpdate) {
-      vm.$slots = resolveSlots(renderChildren, parentVnode.context);
-      vm.$forceUpdate();
-    }
-
-    {
-      isUpdatingChildComponent = false;
     }
   }
 
-  function isInInactiveTree (vm) {
-    while (vm && (vm = vm.$parent)) {
-      if (vm._inactive) { return true }
-    }
-    return false
-  }
+  function resolveInject (inject, vm) {
+    if (inject) {
+      // inject is :any because flow is not smart enough to figure out cached
+      var result = Object.create(null);
+      var keys = hasSymbol
+        ? Reflect.ownKeys(inject)
+        : Object.keys(inject);
 
-  function activateChildComponent (vm, direct) {
-    if (direct) {
-      vm._directInactive = false;
-      if (isInInactiveTree(vm)) {
-        return
-      }
-    } else if (vm._directInactive) {
-      return
-    }
-    if (vm._inactive || vm._inactive === null) {
-      vm._inactive = false;
-      for (var i = 0; i < vm.$children.length; i++) {
-        activateChildComponent(vm.$children[i]);
-      }
-      callHook(vm, 'activated');
-    }
-  }
-
-  function deactivateChildComponent (vm, direct) {
-    if (direct) {
-      vm._directInactive = true;
-      if (isInInactiveTree(vm)) {
-        return
-      }
-    }
-    if (!vm._inactive) {
-      vm._inactive = true;
-      for (var i = 0; i < vm.$children.length; i++) {
-        deactivateChildComponent(vm.$children[i]);
-      }
-      callHook(vm, 'deactivated');
-    }
-  }
-
-  function callHook (vm, hook) {
-    // #7573 disable dep collection when invoking lifecycle hooks
-    pushTarget();
-    var handlers = vm.$options[hook];
-    var info = hook + " hook";
-    if (handlers) {
-      for (var i = 0, j = handlers.length; i < j; i++) {
-        invokeWithErrorHandling(handlers[i], vm, null, vm, info);
-      }
-    }
-    if (vm._hasHookEvent) {
-      vm.$emit('hook:' + hook);
-    }
-    popTarget();
-  }
-
-  /*  */
-
-  var MAX_UPDATE_COUNT = 100;
-
-  var queue = [];
-  var activatedChildren = [];
-  var has = {};
-  var circular = {};
-  var waiting = false;
-  var flushing = false;
-  var index$1 = 0;
-
-  /**
-   * Reset the scheduler's state.
-   */
-  function resetSchedulerState () {
-    index$1 = queue.length = activatedChildren.length = 0;
-    has = {};
-    {
-      circular = {};
-    }
-    waiting = flushing = false;
-  }
-
-  // Async edge case #6566 requires saving the timestamp when event listeners are
-  // attached. However, calling performance.now() has a perf overhead especially
-  // if the page has thousands of event listeners. Instead, we take a timestamp
-  // every time the scheduler flushes and use that for all event listeners
-  // attached during that flush.
-  var currentFlushTimestamp = 0;
-
-  // Async edge case fix requires storing an event listener's attach timestamp.
-  var getNow = Date.now;
-
-  // Determine what event timestamp the browser is using. Annoyingly, the
-  // timestamp can either be hi-res (relative to page load) or low-res
-  // (relative to UNIX epoch), so in order to compare time we have to use the
-  // same timestamp type when saving the flush timestamp.
-  // All IE versions use low-res event timestamps, and have problematic clock
-  // implementations (#9632)
-  if (inBrowser && !isIE) {
-    var performance = window.performance;
-    if (
-      performance &&
-      typeof performance.now === 'function' &&
-      getNow() > document.createEvent('Event').timeStamp
-    ) {
-      // if the event timestamp, although evaluated AFTER the Date.now(), is
-      // smaller than it, it means the event is using a hi-res timestamp,
-      // and we need to use the hi-res version for event listener timestamps as
-      // well.
-      getNow = function () { return performance.now(); };
-    }
-  }
-
-  /**
-   * Flush both queues and run the watchers.
-   */
-  function flushSchedulerQueue () {
-    currentFlushTimestamp = getNow();
-    flushing = true;
-    var watcher, id;
-
-    // Sort queue before flush.
-    // This ensures that:
-    // 1. Components are updated from parent to child. (because parent is always
-    //    created before the child)
-    // 2. A component's user watchers are run before its render watcher (because
-    //    user watchers are created before the render watcher)
-    // 3. If a component is destroyed during a parent component's watcher run,
-    //    its watchers can be skipped.
-    queue.sort(function (a, b) { return a.id - b.id; });
-
-    // do not cache length because more watchers might be pushed
-    // as we run existing watchers
-    for (index$1 = 0; index$1 < queue.length; index$1++) {
-      watcher = queue[index$1];
-      if (watcher.before) {
-        watcher.before();
-      }
-      id = watcher.id;
-      has[id] = null;
-      watcher.run();
-      // in dev build, check and stop circular updates.
-      if (has[id] != null) {
-        circular[id] = (circular[id] || 0) + 1;
-        if (circular[id] > MAX_UPDATE_COUNT) {
-          warn(
-            'You may have an infinite update loop ' + (
-              watcher.user
-                ? ("in watcher with expression \"" + (watcher.expression) + "\"")
-                : "in a component render function."
-            ),
-            watcher.vm
-          );
-          break
+      for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        // #6574 in case the inject object is observed...
+        if (key === '__ob__') { continue }
+        var provideKey = inject[key].from;
+        var source = vm;
+        while (source) {
+          if (source._provided && hasOwn(source._provided, provideKey)) {
+            result[key] = source._provided[provideKey];
+            break
+          }
+          source = source.$parent;
+        }
+        if (!source) {
+          if ('default' in inject[key]) {
+            var provideDefault = inject[key].default;
+            result[key] = typeof provideDefault === 'function'
+              ? provideDefault.call(vm)
+              : provideDefault;
+          } else {
+            warn(("Injection \"" + key + "\" not found"), vm);
+          }
         }
       }
-    }
-
-    // keep copies of post queues before resetting state
-    var activatedQueue = activatedChildren.slice();
-    var updatedQueue = queue.slice();
-
-    resetSchedulerState();
-
-    // call component updated and activated hooks
-    callActivatedHooks(activatedQueue);
-    callUpdatedHooks(updatedQueue);
-
-    // devtool hook
-    /* istanbul ignore if */
-    if (devtools && config.devtools) {
-      devtools.emit('flush');
+      return result
     }
   }
 
-  function callUpdatedHooks (queue) {
-    var i = queue.length;
-    while (i--) {
-      var watcher = queue[i];
-      var vm = watcher.vm;
-      if (vm._watcher === watcher && vm._isMounted && !vm._isDestroyed) {
-        callHook(vm, 'updated');
+  /* not type checking this file because flow doesn't play well with Proxy */
+
+  var initProxy;
+
+  {
+    var allowedGlobals = makeMap(
+      'Infinity,undefined,NaN,isFinite,isNaN,' +
+      'parseFloat,parseInt,decodeURI,decodeURIComponent,encodeURI,encodeURIComponent,' +
+      'Math,Number,Date,Array,Object,Boolean,String,RegExp,Map,Set,JSON,Intl,BigInt,' +
+      'require' // for Webpack/Browserify
+    );
+
+    var warnNonPresent = function (target, key) {
+      warn(
+        "Property or method \"" + key + "\" is not defined on the instance but " +
+        'referenced during render. Make sure that this property is reactive, ' +
+        'either in the data option, or for class-based components, by ' +
+        'initializing the property. ' +
+        'See: https://vuejs.org/v2/guide/reactivity.html#Declaring-Reactive-Properties.',
+        target
+      );
+    };
+
+    var warnReservedPrefix = function (target, key) {
+      warn(
+        "Property \"" + key + "\" must be accessed with \"$data." + key + "\" because " +
+        'properties starting with "$" or "_" are not proxied in the Vue instance to ' +
+        'prevent conflicts with Vue internals. ' +
+        'See: https://vuejs.org/v2/api/#data',
+        target
+      );
+    };
+
+    var hasProxy =
+      typeof Proxy !== 'undefined' && isNative(Proxy);
+
+    if (hasProxy) {
+      var isBuiltInModifier = makeMap('stop,prevent,self,ctrl,shift,alt,meta,exact');
+      config.keyCodes = new Proxy(config.keyCodes, {
+        set: function set (target, key, value) {
+          if (isBuiltInModifier(key)) {
+            warn(("Avoid overwriting built-in modifier in config.keyCodes: ." + key));
+            return false
+          } else {
+            target[key] = value;
+            return true
+          }
+        }
+      });
+    }
+
+    var hasHandler = {
+      has: function has (target, key) {
+        var has = key in target;
+        var isAllowed = allowedGlobals(key) ||
+          (typeof key === 'string' && key.charAt(0) === '_' && !(key in target.$data));
+        if (!has && !isAllowed) {
+          if (key in target.$data) { warnReservedPrefix(target, key); }
+          else { warnNonPresent(target, key); }
+        }
+        return has || !isAllowed
       }
-    }
-  }
+    };
 
-  /**
-   * Queue a kept-alive component that was activated during patch.
-   * The queue will be processed after the entire tree has been patched.
-   */
-  function queueActivatedComponent (vm) {
-    // setting _inactive to false here so that a render function can
-    // rely on checking whether it's in an inactive tree (e.g. router-view)
-    vm._inactive = false;
-    activatedChildren.push(vm);
-  }
+    var getHandler = {
+      get: function get (target, key) {
+        if (typeof key === 'string' && !(key in target)) {
+          if (key in target.$data) { warnReservedPrefix(target, key); }
+          else { warnNonPresent(target, key); }
+        }
+        return target[key]
+      }
+    };
 
-  function callActivatedHooks (queue) {
-    for (var i = 0; i < queue.length; i++) {
-      queue[i]._inactive = true;
-      activateChildComponent(queue[i], true /* true */);
-    }
-  }
-
-  /**
-   * Push a watcher into the watcher queue.
-   * Jobs with duplicate IDs will be skipped unless it's
-   * pushed when the queue is being flushed.
-   */
-  function queueWatcher (watcher) {
-    var id = watcher.id;
-    if (has[id] == null) {
-      has[id] = true;
-      if (!flushing) {
-        queue.push(watcher);
+    initProxy = function initProxy (vm) {
+      if (hasProxy) {
+        // determine which proxy handler to use
+        var options = vm.$options;
+        var handlers = options.render && options.render._withStripped
+          ? getHandler
+          : hasHandler;
+        vm._renderProxy = new Proxy(vm, handlers);
       } else {
-        // if already flushing, splice the watcher based on its id
-        // if already past its id, it will be run next immediately.
-        var i = queue.length - 1;
-        while (i > index$1 && queue[i].id > watcher.id) {
-          i--;
-        }
-        queue.splice(i + 1, 0, watcher);
+        vm._renderProxy = vm;
       }
-      // queue the flush
-      if (!waiting) {
-        waiting = true;
-
-        if (!config.async) {
-          flushSchedulerQueue();
-          return
-        }
-        nextTick(flushSchedulerQueue);
-      }
-    }
+    };
   }
-
-  /*  */
-
-
-
-  var uid$1 = 0;
-
-  /**
-   * A watcher parses an expression, collects dependencies,
-   * and fires callback when the expression value changes.
-   * This is used for both the $watch() api and directives.
-   */
-  var Watcher = function Watcher (
-    vm,
-    expOrFn,
-    cb,
-    options,
-    isRenderWatcher
-  ) {
-    this.vm = vm;
-    if (isRenderWatcher) {
-      vm._watcher = this;
-    }
-    vm._watchers.push(this);
-    // options
-    if (options) {
-      this.deep = !!options.deep;
-      this.user = !!options.user;
-      this.lazy = !!options.lazy;
-      this.sync = !!options.sync;
-      this.before = options.before;
-    } else {
-      this.deep = this.user = this.lazy = this.sync = false;
-    }
-    this.cb = cb;
-    this.id = ++uid$1; // uid for batching
-    this.active = true;
-    this.dirty = this.lazy; // for lazy watchers
-    this.deps = [];
-    this.newDeps = [];
-    this.depIds = new _Set();
-    this.newDepIds = new _Set();
-    this.expression = expOrFn.toString();
-    // parse expression for getter
-    if (typeof expOrFn === 'function') {
-      this.getter = expOrFn;
-    } else {
-      this.getter = parsePath(expOrFn);
-      if (!this.getter) {
-        this.getter = noop;
-        warn(
-          "Failed watching path: \"" + expOrFn + "\" " +
-          'Watcher only accepts simple dot-delimited paths. ' +
-          'For full control, use a function instead.',
-          vm
-        );
-      }
-    }
-    this.value = this.lazy
-      ? undefined
-      : this.get();
-  };
-
-  /**
-   * Evaluate the getter, and re-collect dependencies.
-   */
-  Watcher.prototype.get = function get () {
-    pushTarget(this);
-    var value;
-    var vm = this.vm;
-    try {
-      value = this.getter.call(vm, vm);
-    } catch (e) {
-      if (this.user) {
-        handleError(e, vm, ("getter for watcher \"" + (this.expression) + "\""));
-      } else {
-        throw e
-      }
-    } finally {
-      // "touch" every property so they are all tracked as
-      // dependencies for deep watching
-      if (this.deep) {
-        traverse(value);
-      }
-      popTarget();
-      this.cleanupDeps();
-    }
-    return value
-  };
-
-  /**
-   * Add a dependency to this directive.
-   */
-  Watcher.prototype.addDep = function addDep (dep) {
-    var id = dep.id;
-    if (!this.newDepIds.has(id)) {
-      this.newDepIds.add(id);
-      this.newDeps.push(dep);
-      if (!this.depIds.has(id)) {
-        dep.addSub(this);
-      }
-    }
-  };
-
-  /**
-   * Clean up for dependency collection.
-   */
-  Watcher.prototype.cleanupDeps = function cleanupDeps () {
-    var i = this.deps.length;
-    while (i--) {
-      var dep = this.deps[i];
-      if (!this.newDepIds.has(dep.id)) {
-        dep.removeSub(this);
-      }
-    }
-    var tmp = this.depIds;
-    this.depIds = this.newDepIds;
-    this.newDepIds = tmp;
-    this.newDepIds.clear();
-    tmp = this.deps;
-    this.deps = this.newDeps;
-    this.newDeps = tmp;
-    this.newDeps.length = 0;
-  };
-
-  /**
-   * Subscriber interface.
-   * Will be called when a dependency changes.
-   */
-  Watcher.prototype.update = function update () {
-    /* istanbul ignore else */
-    if (this.lazy) {
-      this.dirty = true;
-    } else if (this.sync) {
-      this.run();
-    } else {
-      queueWatcher(this);
-    }
-  };
-
-  /**
-   * Scheduler job interface.
-   * Will be called by the scheduler.
-   */
-  Watcher.prototype.run = function run () {
-    if (this.active) {
-      var value = this.get();
-      if (
-        value !== this.value ||
-        // Deep watchers and watchers on Object/Arrays should fire even
-        // when the value is the same, because the value may
-        // have mutated.
-        isObject(value) ||
-        this.deep
-      ) {
-        // set new value
-        var oldValue = this.value;
-        this.value = value;
-        if (this.user) {
-          var info = "callback for watcher \"" + (this.expression) + "\"";
-          invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info);
-        } else {
-          this.cb.call(this.vm, value, oldValue);
-        }
-      }
-    }
-  };
-
-  /**
-   * Evaluate the value of the watcher.
-   * This only gets called for lazy watchers.
-   */
-  Watcher.prototype.evaluate = function evaluate () {
-    this.value = this.get();
-    this.dirty = false;
-  };
-
-  /**
-   * Depend on all deps collected by this watcher.
-   */
-  Watcher.prototype.depend = function depend () {
-    var i = this.deps.length;
-    while (i--) {
-      this.deps[i].depend();
-    }
-  };
-
-  /**
-   * Remove self from all dependencies' subscriber list.
-   */
-  Watcher.prototype.teardown = function teardown () {
-    if (this.active) {
-      // remove self from vm's watcher list
-      // this is a somewhat expensive operation so we skip it
-      // if the vm is being destroyed.
-      if (!this.vm._isBeingDestroyed) {
-        remove(this.vm._watchers, this);
-      }
-      var i = this.deps.length;
-      while (i--) {
-        this.deps[i].removeSub(this);
-      }
-      this.active = false;
-    }
-  };
 
   /*  */
 
@@ -8125,74 +8240,6 @@
 
   /*  */
 
-  function initProvide (vm) {
-    var provide = vm.$options.provide;
-    if (provide) {
-      vm._provided = typeof provide === 'function'
-        ? provide.call(vm)
-        : provide;
-    }
-  }
-
-  function initInjections (vm) {
-    var result = resolveInject(vm.$options.inject, vm);
-    if (result) {
-      toggleObserving(false);
-      Object.keys(result).forEach(function (key) {
-        /* istanbul ignore else */
-        {
-          defineReactive$$1(vm, key, result[key], function () {
-            warn(
-              "Avoid mutating an injected value directly since the changes will be " +
-              "overwritten whenever the provided component re-renders. " +
-              "injection being mutated: \"" + key + "\"",
-              vm
-            );
-          });
-        }
-      });
-      toggleObserving(true);
-    }
-  }
-
-  function resolveInject (inject, vm) {
-    if (inject) {
-      // inject is :any because flow is not smart enough to figure out cached
-      var result = Object.create(null);
-      var keys = hasSymbol
-        ? Reflect.ownKeys(inject)
-        : Object.keys(inject);
-
-      for (var i = 0; i < keys.length; i++) {
-        var key = keys[i];
-        // #6574 in case the inject object is observed...
-        if (key === '__ob__') { continue }
-        var provideKey = inject[key].from;
-        var source = vm;
-        while (source) {
-          if (source._provided && hasOwn(source._provided, provideKey)) {
-            result[key] = source._provided[provideKey];
-            break
-          }
-          source = source.$parent;
-        }
-        if (!source) {
-          if ('default' in inject[key]) {
-            var provideDefault = inject[key].default;
-            result[key] = typeof provideDefault === 'function'
-              ? provideDefault.call(vm)
-              : provideDefault;
-          } else {
-            warn(("Injection \"" + key + "\" not found"), vm);
-          }
-        }
-      }
-      return result
-    }
-  }
-
-  /*  */
-
   var uid$2 = 0;
 
   function initMixin (Vue) {
@@ -8203,6 +8250,7 @@
 
       var startTag, endTag;
       /* istanbul ignore if */
+      // 开始性能检测
       if (config.performance && mark) {
         startTag = "vue-perf-start:" + (vm._uid);
         endTag = "vue-perf-end:" + (vm._uid);
@@ -8240,6 +8288,7 @@
       callHook(vm, 'created');
 
       /* istanbul ignore if */
+      // 结束性能检测
       if (config.performance && mark) {
         vm._name = formatComponentName(vm, false);
         mark(endTag);
