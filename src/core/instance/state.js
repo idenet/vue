@@ -36,6 +36,13 @@ const sharedPropertyDefinition = {
   set: noop
 }
 
+/**
+ * 通过 Object.defineProperty 函数在实例对象 vm 上定义与 data 数据字段同名的访问器属性，并且这些属性代理的值是 vm._data 上对应属性的值
+ * 当我们访问 ins.a 时实际访问的是 ins._data.a
+ * @param {*} target
+ * @param {*} sourceKey
+ * @param {*} key
+ */
 export function proxy (target: Object, sourceKey: string, key: string) {
   sharedPropertyDefinition.get = function proxyGetter () {
     return this[sourceKey][key]
@@ -47,6 +54,7 @@ export function proxy (target: Object, sourceKey: string, key: string) {
 }
 
 export function initState (vm: Component) {
+  //这个数组将用来存储所有该组件实例的 watcher 对象
   vm._watchers = []
   const opts = vm.$options
   if (opts.props) initProps(vm, opts.props)
@@ -54,6 +62,7 @@ export function initState (vm: Component) {
   if (opts.data) {
     initData(vm)
   } else {
+    // 不存在则观测空对象
     observe(vm._data = {}, true /* asRootData */)
   }
   if (opts.computed) initComputed(vm, opts.computed)
@@ -110,11 +119,20 @@ function initProps (vm: Component, propsOptions: Object) {
   toggleObserving(true)
 }
 
+/**
+ * 响应式data
+ * @param {*} vm
+ */
 function initData (vm: Component) {
+  // 获得options里的data对象 注意这个data对象是function
+  // 但是在init之前，我们调用了用户传入的 initcreate
+  // 这时候是可以修改data的，所以还是要判断
+  // 如果是函数 就 getdata
   let data = vm.$options.data
   data = vm._data = typeof data === 'function'
     ? getData(data, vm)
     : data || {}
+  // 这里应该是返回纯对象了，如果还不是 就警告开发者
   if (!isPlainObject(data)) {
     data = {}
     process.env.NODE_ENV !== 'production' && warn(
@@ -130,6 +148,7 @@ function initData (vm: Component) {
   let i = keys.length
   while (i--) {
     const key = keys[i]
+    // 你定义在 methods 对象中的函数名称已经被作为 data 对象中某个数据字段的 key 了，你应该换一个函数名字
     if (process.env.NODE_ENV !== 'production') {
       if (methods && hasOwn(methods, key)) {
         warn(
@@ -138,12 +157,14 @@ function initData (vm: Component) {
         )
       }
     }
+    //props优先级 > methods优先级 > data优先级
     if (props && hasOwn(props, key)) {
       process.env.NODE_ENV !== 'production' && warn(
         `The data property "${key}" is already declared as a prop. ` +
         `Use prop default value instead.`,
         vm
       )
+      // 判断一个字符串的第一个字符是不是 $ 或 _ 来决定其是否是保留的
     } else if (!isReserved(key)) {
       proxy(vm, `_data`, key)
     }
@@ -154,8 +175,11 @@ function initData (vm: Component) {
 
 export function getData (data: Function, vm: Component): any {
   // #7573 disable dep collection when invoking data getters
+  // v这个其实是，我们在组件中一般会传入 props，也会定义data，props会经过响应式，
+  // 这时候如果data中的key和props一致，就会冗余
   pushTarget()
   try {
+    // 通过调用 data 选项从而获取数据对象
     return data.call(vm, vm)
   } catch (e) {
     handleError(e, vm, `data()`)

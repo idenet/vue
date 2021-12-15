@@ -36,6 +36,11 @@ const v = new Sub({
   created: function () {
     console.log('childVal')
   },
+  methods: {
+    abs() {
+      console.log('ctd')
+    }
+  },
   // 检测 test 的变化
   watch: {
     test: function () {
@@ -43,7 +48,9 @@ const v = new Sub({
     }
   }
 })
+console.log(v)
 console.log(v.$options)
+console.log(v.$options.render)
 // 修改 test 的值
 v.test = 2
   </script>

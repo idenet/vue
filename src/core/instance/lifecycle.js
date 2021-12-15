@@ -18,6 +18,7 @@ import {
   invokeWithErrorHandling
 } from '../util/index'
 
+// 当前正在渲染的实例的引用
 export let activeInstance: any = null
 export let isUpdatingChildComponent: boolean = false
 
@@ -29,24 +30,35 @@ export function setActiveInstance(vm: Component) {
   }
 }
 
+/**
+ * 将当前实例添加到父实例的 $children 属性里，并设置当前实例的 $parent 指向父实例
+ * 什么是 抽象实例， 在vue中，是内置的 keep-alive和transition就是 他们不渲染dom组件
+ * @param {*} vm
+ */
 export function initLifecycle (vm: Component) {
+  // 定义 options，它是 vm.$options 的引用，后面的代码使用的都是 options 常量
   const options = vm.$options
 
-  // locate first non-abstract parent
+  // locate first non-abstract parent (查找第一个非抽象的父组件)
+// 定义 parent，它引用当前实例的父实例
   let parent = options.parent
+  // 如果当前实例有父组件，且当前实例不是抽象的
   if (parent && !options.abstract) {
+    // 使用 while 循环查找第一个非抽象的父组件
     while (parent.$options.abstract && parent.$parent) {
       parent = parent.$parent
     }
+    // 经过上面的 while 循环后，parent 应该是一个非抽象的组件，将它作为当前实例的父级，所以将当前实例 vm 添加到父级的 $children 属性里
     parent.$children.push(vm)
   }
-
+  // 设置当前实例的 $parent 属性，指向父级
   vm.$parent = parent
+  // 设置 $root 属性，有父级就是用父级的 $root，否则 $root 指向自身
   vm.$root = parent ? parent.$root : vm
 
   vm.$children = []
   vm.$refs = {}
-
+  // 和生命周期相关的一些内部属性
   vm._watcher = null
   vm._inactive = null
   vm._directInactive = false
@@ -336,14 +348,26 @@ export function deactivateChildComponent (vm: Component, direct?: boolean) {
 
 export function callHook (vm: Component, hook: string) {
   // #7573 disable dep collection when invoking lifecycle hooks
+  // 去除依赖冗余
   pushTarget()
+  // 获取生命周期钩子函数
   const handlers = vm.$options[hook]
   const info = `${hook} hook`
   if (handlers) {
     for (let i = 0, j = handlers.length; i < j; i++) {
+      // 可能是异步的生命周期函数， 执行它
       invokeWithErrorHandling(handlers[i], vm, null, vm, info)
     }
   }
+  //判断是否存在生命周期钩子的事件侦听器
+  /**
+   * <child
+  @hook:beforeCreate="handleChildBeforeCreate"
+  @hook:created="handleChildCreated"
+  @hook:mounted="handleChildMounted"
+  @hook:生命周期钩子
+ />
+   */
   if (vm._hasHookEvent) {
     vm.$emit('hook:' + hook)
   }
