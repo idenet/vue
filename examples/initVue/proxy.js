@@ -17,9 +17,7 @@
 // }
 
 const data = {
-  a: {
-    b: 2
-  }
+  a: 1
 }
 
 // for (const key in data) {
@@ -47,8 +45,8 @@ function walk (data) {
   let dep = []
   let val = data[key]
   // 如果val 还是对象 递归调用walk函数将其转化成访问属性
-  const nativestring = Object.prototype.toString.call(val)
-  if (nativestring === '[object object]') {
+  const nativeString = Object.prototype.toString.call(val)
+  if (nativeString === '[object Object]') {
     walk(val)
   }
   Object.defineProperty(data, key, {
@@ -57,7 +55,7 @@ function walk (data) {
       dep.push(Target)
       return val
     },
-    set (newVal, val) {
+    set (newVal) {
       // 触发依赖
       // 如果值没有变什么都不做
       if (newVal === val) return
