@@ -49,7 +49,10 @@ export class Observer {
     def(value, '__ob__', this)
     // 数组处理方式
     if (Array.isArray(value)) {
+      // 判断当前环境是否可以使用 __proto__
       if (hasProto) {
+        // 把数组实例与代理原型或与代理原型中定义的函数联系起来，从而拦截数组变异方法
+        // 设置value.__proto__ 为 arrayMethods
         protoAugment(value, arrayMethods)
       } else {
         copyAugment(value, arrayMethods, arrayKeys)
@@ -75,6 +78,7 @@ export class Observer {
 
   /**
    * Observe a list of Array items.
+   * 深度观测 递归调用 解决嵌套内数组的响应
    */
   observeArray (items: Array<any>) {
     for (let i = 0, l = items.length; i < l; i++) {
@@ -169,6 +173,15 @@ export function defineReactive (
     val = obj[key]
   }
   // 深度观测
+
+  // {
+  //   a: 1,
+  //     __ob__ : Observer,
+  //     b: {
+  //     3,
+  //     __ob__ : Observer,
+  //   }
+  // }
   // childOb  = data.a.__ob__
   let childOb = !shallow && observe(val)
   Object.defineProperty(obj, key, {
@@ -191,6 +204,7 @@ export function defineReactive (
            * 这是 vue.set 和 vue.delete的原理
            */
           childOb.dep.depend()
+          // 解决 get的时候 value 仍旧是一个数组的时候 去做响应式依赖
           if (Array.isArray(value)) {
             dependArray(value)
           }
@@ -232,11 +246,13 @@ export function defineReactive (
  * already exist.
  */
 export function set (target: Array<any> | Object, key: any, val: any): any {
+  // 如果 set 函数的第一个参数是 undefined 或 null 或者是原始类型值，那么在非生产环境下会打印警告信息
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
     warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
+  // 判断 target 和 key
   if (Array.isArray(target) && isValidArrayIndex(key)) {
     target.length = Math.max(target.length, key)
     target.splice(key, 1, val)
@@ -246,7 +262,9 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
     target[key] = val
     return val
   }
+  // 如果是新添加属性
   const ob = (target: any).__ob__
+  //当使用 Vue.set/$set 函数为根数据对象添加属性时，是不被允许的。
   if (target._isVue || (ob && ob.vmCount)) {
     process.env.NODE_ENV !== 'production' && warn(
       'Avoid adding reactive properties to a Vue instance or its root $data ' +
@@ -254,6 +272,7 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
     )
     return val
   }
+  // 如果不存在 __ob__ 他就不是一个响应式，所以直接赋值
   if (!ob) {
     target[key] = val
     return val
@@ -291,12 +310,14 @@ export function del (target: Array<any> | Object, key: any) {
   if (!ob) {
     return
   }
+  // 和上面一样 都是 用ob去触发响应式的
   ob.dep.notify()
 }
 
 /**
  * Collect dependencies on array elements when the array is touched, since
  * we cannot intercept array element access like property getters.
+ * 数组是没发给下标做访问器属性的，所以需要dependArray去一个个做依赖收集
  */
 function dependArray (value: Array<any>) {
   for (let e, i = 0, l = value.length; i < l; i++) {

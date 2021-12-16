@@ -5,7 +5,9 @@
 
 import { def } from '../util/index'
 
+// 缓存数组的原型
 const arrayProto = Array.prototype
+// value.__proto__.__proto__ == Array.prototype
 export const arrayMethods = Object.create(arrayProto)
 
 const methodsToPatch = [
@@ -39,7 +41,10 @@ methodsToPatch.forEach(function (method) {
     }
     if (inserted) ob.observeArray(inserted)
     // notify change
+    // 执行所有的依赖
     ob.dep.notify()
     return result
   })
 })
+
+

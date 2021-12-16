@@ -22,9 +22,11 @@ Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
 ): Component {
+  // 获取挂载点的dom
   el = el && query(el)
 
   /* istanbul ignore if */
+  //挂载点的本意是 组件挂载的占位，它将会被组件自身的模板 替换掉，而 <body> 元素和 <html> 元素显然是不能被替换掉的
   if (el === document.body || el === document.documentElement) {
     process.env.NODE_ENV !== 'production' && warn(
       `Do not mount Vue to <html> or <body> - mount to normal elements instead.`
@@ -34,6 +36,7 @@ Vue.prototype.$mount = function (
 
   const options = this.$options
   // resolve template/el and convert to render function
+  // 使用 template 或 el 选项构建渲染函数
   if (!options.render) {
     let template = options.template
     if (template) {
