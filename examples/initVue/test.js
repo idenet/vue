@@ -12,7 +12,7 @@ function walk (data) {
     let dep = []
     let val = data[key]
     const nativeString = Object.prototype.toString.call(val)
-    if (nativeString === '[object Object]') {
+    if (nativeString === "[object Object]") {
       walk(val)
     }
     Object.defineProperty(data, key, {

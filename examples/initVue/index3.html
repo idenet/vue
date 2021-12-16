@@ -16,13 +16,16 @@
   <script>
     const ins = new Vue({
       data: {
-        a: 1
+        a: 1,
+        b: {
+          c: 2
+        }
       }
     })
 
-    ins.$watch('a', () => {
-      console.log('修改了 a')
-    })
+    // ins.$watch('a', () => {
+    //   console.log('修改了 a')
+    // })
   </script>
 </body>
 
