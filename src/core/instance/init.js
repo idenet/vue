@@ -48,8 +48,11 @@ export function initMixin (Vue: Class<Component>) {
     }
     /* istanbul ignore else */
     if (process.env.NODE_ENV !== 'production') {
+      // 设置渲染函数的作用域代理，其目的是为我们提供更好的提示信息
       initProxy(vm)
     } else {
+      // 在生产环境中通过，vue-loader 编译后的template 是不 使用 with 语句包裹的 js代码，
+      // 所以不需要proxy 的has 去代理 with中的 属性
       vm._renderProxy = vm
     }
     // expose real self
