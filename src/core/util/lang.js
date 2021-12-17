@@ -32,10 +32,12 @@ export function def (obj: Object, key: string, val: any, enumerable?: boolean) {
  */
 const bailRE = new RegExp(`[^${unicodeRegExp.source}.$_\\d]`)
 export function parsePath (path: string): any {
+  // 判断path是否使用规定的格式
   if (bailRE.test(path)) {
     return
   }
   const segments = path.split('.')
+  // 返回的还是函数， 会出现obj[a][b]
   return function (obj) {
     for (let i = 0; i < segments.length; i++) {
       if (!obj) return

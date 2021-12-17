@@ -65,8 +65,10 @@ Vue.prototype.$mount = function (
       */
       template = getOuterHTML(el)
     }
+    // 可能存在template为空 拿到的数据为空
     if (template) {
       /* istanbul ignore if */
+      //统计编译器性能
       if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
         mark('compile')
       }
@@ -82,6 +84,7 @@ Vue.prototype.$mount = function (
       options.staticRenderFns = staticRenderFns
 
       /* istanbul ignore if */
+      // 统计编译器性能
       if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
         mark('compile end')
         measure(`vue ${this._name} compile`, 'compile', 'compile end')
@@ -100,6 +103,7 @@ function getOuterHTML (el: Element): string {
   if (el.outerHTML) {
     return el.outerHTML
   } else {
+    // outhtml可能不存在，因为svg， 所以 创建一个div包裹
     const container = document.createElement('div')
     container.appendChild(el.cloneNode(true))
     return container.innerHTML

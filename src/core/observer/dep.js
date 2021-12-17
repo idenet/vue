@@ -29,6 +29,7 @@ export default class Dep {
   }
 
   depend () {
+    // Wacher.addDep -> Watcher.addSub -> watcher.subs.push(Watcher)
     if (Dep.target) {
       Dep.target.addDep(this)
     }

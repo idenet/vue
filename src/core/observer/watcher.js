@@ -45,34 +45,43 @@ export default class Watcher {
 
   constructor (
     vm: Component,
+    // 求值表达式
     expOrFn: string | Function,
+    // 回调
     cb: Function,
+    // 选项
     options?: ?Object,
+    // 是否是渲染watcher
     isRenderWatcher?: boolean
   ) {
+    // 该观察者属于哪一个组件
     this.vm = vm
     if (isRenderWatcher) {
+      // 将当前渲染watcher 复制给 实例的_watcher
       vm._watcher = this
     }
+    // 不管是不是 渲染watcher。 当前this都会复制给_watchers
     vm._watchers.push(this)
     // options
     if (options) {
-      this.deep = !!options.deep
-      this.user = !!options.user
-      this.lazy = !!options.lazy
-      this.sync = !!options.sync
-      this.before = options.before
+      this.deep = !!options.deep // 是否使用深度观测
+      this.user = !!options.user // 用来标识当前观察者实例对象是 开发者定义的 还是 内部定义的
+      this.lazy = !!options.lazy // 惰性watcher  第一次不请求
+      this.sync = !!options.sync // 当数据变化的时候是否同步求值并执行回调
+      this.before = options.before // 在触发更新之前的 调用回调
     } else {
       this.deep = this.user = this.lazy = this.sync = false
     }
-    this.cb = cb
-    this.id = ++uid // uid for batching
-    this.active = true
+    this.cb = cb // 回调
+    this.id = ++uid // uid for batching 唯一标识
+    this.active = true // 激活对象
     this.dirty = this.lazy // for lazy watchers
+    // 实现避免重复依赖
     this.deps = []
     this.newDeps = []
     this.depIds = new Set()
     this.newDepIds = new Set()
+    // ---
     this.expression = process.env.NODE_ENV !== 'production'
       ? expOrFn.toString()
       : ''
@@ -83,6 +92,7 @@ export default class Watcher {
       this.getter = parsePath(expOrFn)
       if (!this.getter) {
         this.getter = noop
+        // Watcher 只接受简单的点(.)分隔路径，如果你要用全部的 js 语法特性直接观察一个函数即可
         process.env.NODE_ENV !== 'production' && warn(
           `Failed watching path: "${expOrFn}" ` +
           'Watcher only accepts simple dot-delimited paths. ' +
@@ -98,8 +108,11 @@ export default class Watcher {
 
   /**
    * Evaluate the getter, and re-collect dependencies.
+   * 依赖收集 求值 1. 除非get 拦截器 2. 获得被观察目标的值
+   *
    */
   get () {
+    // 给Dep.target 赋值 Watcher
     pushTarget(this)
     let value
     const vm = this.vm
@@ -128,7 +141,9 @@ export default class Watcher {
    */
   addDep (dep: Dep) {
     const id = dep.id
+    // 查看这个唯一id 是否在set中已存在，
     if (!this.newDepIds.has(id)) {
+      // 不存在就放进 set里面 然后吧 dep也放到 newdeps里
       this.newDepIds.add(id)
       this.newDeps.push(dep)
       if (!this.depIds.has(id)) {

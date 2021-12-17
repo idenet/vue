@@ -155,8 +155,10 @@ export function mountComponent (
   el: ?Element,
   hydrating?: boolean
 ): Component {
+  // 拿到 传递的el  但是这段在之后会被重写成 template里的数据
   vm.$el = el
   if (!vm.$options.render) {
+    // 创建一个空的节点
     vm.$options.render = createEmptyVNode
     if (process.env.NODE_ENV !== 'production') {
       /* istanbul ignore if */
@@ -182,22 +184,26 @@ export function mountComponent (
   /* istanbul ignore if */
   if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
     updateComponent = () => {
+      // 性能渲染监控
       const name = vm._name
       const id = vm._uid
       const startTag = `vue-perf-start:${id}`
       const endTag = `vue-perf-end:${id}`
 
       mark(startTag)
+      // vm._render 函数的作用是调用 vm.$options.render 函数并返回生成的虚拟节点(vnode)
       const vnode = vm._render()
       mark(endTag)
       measure(`vue ${name} render`, startTag, endTag)
 
       mark(startTag)
+      // vm._update 函数的作用是把 vm._render 函数生成的虚拟节点渲染成真正的 DOM
       vm._update(vnode, hydrating)
       mark(endTag)
       measure(`vue ${name} patch`, startTag, endTag)
     }
   } else {
+    //把渲染函数生成的虚拟DOM渲染成真正的DOM
     updateComponent = () => {
       vm._update(vm._render(), hydrating)
     }
@@ -206,6 +212,12 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+  // 创建观察者实例
+  // Watcher会对 updateComponent 求值， 而 它会触发_render的执行， 在h函数中会触发在this.xx
+  // 这回触发 this._data.xx 其实就是出发了 get拦截器 从而将依赖收集，当数据变化就重新执行updateComponent
+  // 这就完成了渲染
+
+  // 这就是渲染watcher
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
