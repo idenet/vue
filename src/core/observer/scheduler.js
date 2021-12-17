@@ -162,14 +162,19 @@ function callActivatedHooks (queue) {
  * pushed when the queue is being flushed.
  */
 export function queueWatcher (watcher: Watcher) {
+  // 当前观察者对象的 watcher
   const id = watcher.id
+  // 判断id是否是在has对象中
   if (has[id] == null) {
     has[id] = true
+    // 常量
     if (!flushing) {
+      // 存入watcher
       queue.push(watcher)
     } else {
       // if already flushing, splice the watcher based on its id
       // if already past its id, it will be run next immediately.
+      // 计算属性灰仔队列执行时入队，这时候要处理queue队列的顺序
       let i = queue.length - 1
       while (i > index && queue[i].id > watcher.id) {
         i--
@@ -184,6 +189,15 @@ export function queueWatcher (watcher: Watcher) {
         flushSchedulerQueue()
         return
       }
+      // 可以暂时理解为 settimeout(fn, 0)
+      // 但是settimeout 不是最优的选择
+      // 这里先看异步 nexttick的实现
+      // 这里简单聊一下任务队列，一次宏任务中，可能存在多个微任务
+      // 这时候微任务会push到一个queue中
+      // 当一次宏任务执行完，
+      // 浏览器查看微任务queue 有的话 根据优先级 执行 一般依次执行
+      //执行完 在执行ui重绘或者 io响应 这样算完成一次 宏任务
+      // 然后去任务队列中继续找宏任务执行
       nextTick(flushSchedulerQueue)
     }
   }

@@ -15,7 +15,8 @@ export default class Dep {
   id: number;
   subs: Array<Watcher>;
 
-  constructor () {
+  constructor() {
+    // new Dep 时 唯一id会自增
     this.id = uid++
     this.subs = []
   }
@@ -25,6 +26,7 @@ export default class Dep {
   }
 
   removeSub (sub: Watcher) {
+    // 将watcher 从当前依赖数组中移除
     remove(this.subs, sub)
   }
 
@@ -45,6 +47,7 @@ export default class Dep {
       subs.sort((a, b) => a.id - b.id)
     }
     for (let i = 0, l = subs.length; i < l; i++) {
+      // 循环执行所有的 观察者对象
       subs[i].update()
     }
   }

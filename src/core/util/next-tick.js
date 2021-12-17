@@ -10,9 +10,23 @@ export let isUsingMicroTask = false
 const callbacks = []
 let pending = false
 
+/**
+ * created () {
+  this.name = 'HcySunYang'
+  this.$nextTick(() => {
+    this.name = 'hcy'
+    this.$nextTick(() => { console.log('第二个 $nextTick') })
+  })
+}
+[
+  flushCallbacks, // 第一个 flushCallbacks
+  flushCallbacks  // 第二个 flushCallbacks
+]
+ */
 function flushCallbacks () {
   pending = false
   const copies = callbacks.slice(0)
+  // 这里清空 callbacks 执行第一个的时候
   callbacks.length = 0
   for (let i = 0; i < copies.length; i++) {
     copies[i]()
@@ -39,6 +53,7 @@ let timerFunc
 // completely stops working after triggering a few times... so, if native
 // Promise is available, we will use it:
 /* istanbul ignore next, $flow-disable-line */
+// 检测是否存在promise 存在就用promise
 if (typeof Promise !== 'undefined' && isNative(Promise)) {
   const p = Promise.resolve()
   timerFunc = () => {
@@ -48,6 +63,7 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
     // microtask queue but the queue isn't being flushed, until the browser
     // needs to do some other work, e.g. handle a timer. Therefore we can
     // "force" the microtask queue to be flushed by adding an empty timer.
+    // 在ios中promise存在问题，使用 settimeout注册一个 空的
     if (isIOS) setTimeout(noop)
   }
   isUsingMicroTask = true
@@ -59,6 +75,7 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
   // Use MutationObserver where native Promise is not available,
   // e.g. PhantomJS, iOS7, Android 4.4
   // (#6466 MutationObserver is unreliable in IE11)
+  // 注册 mutationObserver
   let counter = 1
   const observer = new MutationObserver(flushCallbacks)
   const textNode = document.createTextNode(String(counter))
@@ -75,6 +92,7 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
   // Technically it leverages the (macro) task queue,
   // but it is still a better choice than setTimeout.
   timerFunc = () => {
+    // 不用做超时检测
     setImmediate(flushCallbacks)
   }
 } else {
@@ -99,9 +117,11 @@ export function nextTick (cb?: Function, ctx?: Object) {
   })
   if (!pending) {
     pending = true
+    // 这里才是执行 cb的开始
     timerFunc()
   }
   // $flow-disable-line
+  // 实现promise方式的nextTick
   if (!cb && typeof Promise !== 'undefined') {
     return new Promise(resolve => {
       _resolve = resolve

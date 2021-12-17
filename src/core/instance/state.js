@@ -314,6 +314,21 @@ function initMethods (vm: Component, methods: Object) {
   }
 }
 
+/**
+ *  watcher的handle还能是个数组
+ * watch: {
+  name: [
+    function () {
+      console.log('name 改变了1')
+    },
+    function () {
+      console.log('name 改变了2')
+    }
+  ]
+}
+ * @param {*} vm
+ * @param {*} watch
+ */
 function initWatch (vm: Component, watch: Object) {
   for (const key in watch) {
     const handler = watch[key]
@@ -333,10 +348,29 @@ function createWatcher (
   handler: any,
   options?: Object
 ) {
+  /**
+   * vm.$watch('name', {
+  handler () {
+    console.log('change')
+  },
+  immediate: true
+})
+   */
   if (isPlainObject(handler)) {
     options = handler
     handler = handler.handler
   }
+  // 如果handle是个字符串
+  /**
+   * watch: {
+    name: 'handleNameChange'
+  },
+  methods: {
+    handleNameChange () {
+    console.log('name change')
+  }
+  调用了 方法handle
+   */
   if (typeof handler === 'string') {
     handler = vm[handler]
   }
@@ -369,24 +403,38 @@ export function stateMixin (Vue: Class<Component>) {
   Vue.prototype.$set = set
   Vue.prototype.$delete = del
 
+  /**
+   *  观察某个属性，执行回调
+   * @param {*} expOrFn
+   * @param {*} cb
+   * @param {*} options
+   * @returns
+   */
   Vue.prototype.$watch = function (
     expOrFn: string | Function,
     cb: any,
     options?: Object
   ): Function {
+    // 当前组件实例对象
     const vm: Component = this
+    // 检测第二个参数是否是纯对象
     if (isPlainObject(cb)) {
       return createWatcher(vm, expOrFn, cb, options)
     }
     options = options || {}
+    // 表示为用户创建
     options.user = true
+    // 创建watcher对象
     const watcher = new Watcher(vm, expOrFn, cb, options)
+    // 立即执行
     if (options.immediate) {
       const info = `callback for immediate watcher "${watcher.expression}"`
       pushTarget()
+      // 获取观察者实例对象，执行了 this.get
       invokeWithErrorHandling(cb, vm, [watcher.value], vm, info)
       popTarget()
     }
+    // 返回一个解除函数
     return function unwatchFn () {
       watcher.teardown()
     }
