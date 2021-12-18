@@ -16,6 +16,7 @@ export function initMixin (Vue: Class<Component>) {
   Vue.prototype._init = function (options?: Object) {
     const vm: Component = this
     // a uid
+    // 根实例 子组件
     vm._uid = uid++
 
     let startTag, endTag
@@ -65,11 +66,14 @@ export function initMixin (Vue: Class<Component>) {
     initRender(vm)
     // 生命周期钩子
     callHook(vm, 'beforeCreate')
+    // 为什么 inject要在provide 之前 因为只有子组件需要inject
     initInjections(vm) // resolve injections before data/props
     // initProps  initMethods initData initComputed initWatch
     initState(vm)
     initProvide(vm) // resolve provide after data/props
     callHook(vm, 'created')
+
+    //如果一个组件使用了 provide 选项，那么该选项指定的数据将会被注入到该组件的所有后代组件中，在后代组件中可以使用 inject 选项选择性注入，这样后代组件就拿到了祖先组件提供的数据
 
     /* istanbul ignore if */
     // 结束性能检测

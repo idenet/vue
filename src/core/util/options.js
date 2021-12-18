@@ -435,6 +435,7 @@ function normalizeInject (options: Object, vm: ?Component) {
 /**
  * Normalize raw function directives into object format.
  */
+
 function normalizeDirectives (options: Object) {
   const dirs = options.directives
   if (dirs) {

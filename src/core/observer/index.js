@@ -46,6 +46,7 @@ export class Observer {
     //依赖计数
     this.vmCount = 0
     // 创建一个不可枚举的 __ob__ 对象，该对象是 Observer本身
+
     def(value, '__ob__', this)
     // 数组处理方式
     if (Array.isArray(value)) {

@@ -40,6 +40,7 @@ export default class Dep {
   notify () {
     // stabilize the subscriber list first
     const subs = this.subs.slice()
+    // 同步状态下需要排序 顺序执行不然会乱
     if (process.env.NODE_ENV !== 'production' && !config.async) {
       // subs aren't sorted in scheduler if not running async
       // we need to sort them now to make sure they fire in correct

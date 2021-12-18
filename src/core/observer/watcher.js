@@ -108,6 +108,7 @@ export default class Watcher {
         )
       }
     }
+    // 当时计算属性 构造函数是不求值的
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -135,6 +136,14 @@ export default class Watcher {
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
+      // todo 深度观测
+      /**
+       * watch: {
+       *  'a.b'() {}
+       * }
+       *
+       * 注意value值是 a.b
+       */
       if (this.deep) {
         traverse(value)
       }
@@ -209,6 +218,7 @@ export default class Watcher {
    */
   update () {
     /* istanbul ignore else */
+    // 计算属性值是不参与更新的
     if (this.lazy) {
       this.dirty = true
       // 是否同步更新变化

@@ -18,6 +18,29 @@ type PropOptions = {
   validator: ?Function
 };
 
+/**
+ * props 的名字
+key = 'prop1'
+props 选项参数
+propOptions = {
+  prop1: {
+    type: String
+  }
+}
+// props 数据
+propsData = {
+  prop1: 'str'
+}
+// 组件实例对象
+vm = vm
+ *
+ * @export
+ * @param {string} key
+ * @param {Object} propOptions
+ * @param {Object} propsData
+ * @param {Component} [vm]
+ * @return {*}  {*}
+ */
 export function validateProp (
   key: string,
   propOptions: Object,
@@ -28,6 +51,7 @@ export function validateProp (
   const absent = !hasOwn(propsData, key)
   let value = propsData[key]
   // boolean casting
+  // 传值如何设定 没传值如何设定
   const booleanIndex = getTypeIndex(Boolean, prop.type)
   if (booleanIndex > -1) {
     if (absent && !hasOwn(prop, 'default')) {
@@ -42,12 +66,15 @@ export function validateProp (
     }
   }
   // check default value
+  // 当外界没有传值的时候，
   if (value === undefined) {
+    // 但是prop又有一个默认的值
     value = getPropDefaultValue(vm, prop, key)
     // since the default value is a fresh copy,
     // make sure to observe it.
     const prevShouldObserve = shouldObserve
     toggleObserving(true)
+    // 将默认值定义为响应式
     observe(value)
     toggleObserving(prevShouldObserve)
   }
@@ -56,6 +83,7 @@ export function validateProp (
     // skip validation for weex recycle-list child component props
     !(__WEEX__ && isObject(value) && ('@binding' in value))
   ) {
+    // 校验props
     assertProp(prop, key, value, vm, absent)
   }
   return value
@@ -69,8 +97,10 @@ function getPropDefaultValue (vm: ?Component, prop: PropOptions, key: string): a
   if (!hasOwn(prop, 'default')) {
     return undefined
   }
+  // 获取默认值
   const def = prop.default
   // warn against non-factory defaults for Object & Array
+  // 需要一个工厂函数返回不然会导致相同名字
   if (process.env.NODE_ENV !== 'production' && isObject(def)) {
     warn(
       'Invalid default value for prop "' + key + '": ' +
@@ -81,6 +111,11 @@ function getPropDefaultValue (vm: ?Component, prop: PropOptions, key: string): a
   }
   // the raw prop value was also undefined from previous render,
   // return previous default value to avoid unnecessary watcher trigger
+  /**
+   * 1、当前组件处于更新状态，且没有传递该 prop 数据给组件
+2、上一次更新或创建时外界也没有向组件传递该 prop 数据
+3、上一次组件更新或创建时该 prop 拥有一个不为 undefined 的默认值
+   */
   if (vm && vm.$options.propsData &&
     vm.$options.propsData[key] === undefined &&
     vm._props[key] !== undefined

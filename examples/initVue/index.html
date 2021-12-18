@@ -11,21 +11,33 @@
 
 <body>
   <div id="app">
-    <ul>
-      <li v-for="(item, index) in list" :key="item">{{item}}</li>
-    </ul>
-    <button @click="reverse">reverse</button>
+    <button>{{compA}}</button>
   </div>
   <script>
-    Vue.config.performance = true
     let vm = new Vue({
       el: '#app',
       data: {
-        list: [1, 2, 3, 4, 5]
+        a: 1,
+        b: 2
+      },
+      computed: {
+        compA() {
+          return this.a +this.b
+        }
+      },
+      watch: {
+        a:'functiona'
+      },
+      created() {
+        this.$watch(() => {
+          return [this.a, this.b]
+        }, () => {
+          console.log('ab被执行了')
+        })
       },
       methods: {
-        reverse() {
-          this.list.reverse()
+        functiona() {
+          console.log('a, b 被执行了')
         }
       }
     })
