@@ -75,6 +75,7 @@ Vue.prototype.$mount = function (
       // 通过compileToFunction 生成 render 和 静态render
       const { render, staticRenderFns } = compileToFunctions(template, {
         outputSourceRange: process.env.NODE_ENV !== 'production',
+        // 在模板编译的时候对属性的换行符做处理
         shouldDecodeNewlines,
         shouldDecodeNewlinesForHref,
         delimiters: options.delimiters,

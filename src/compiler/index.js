@@ -12,10 +12,12 @@ export const createCompiler = createCompilerCreator(function baseCompile (
   template: string,
   options: CompilerOptions
 ): CompiledResult {
+  // 解析原始代码并生成AST
   const ast = parse(template.trim(), options)
   if (options.optimize !== false) {
     optimize(ast, options)
   }
+  // 根据给定的AST生成目标平台的代码
   const code = generate(ast, options)
   return {
     ast,

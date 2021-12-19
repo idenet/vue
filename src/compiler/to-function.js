@@ -18,6 +18,16 @@ function createFunction (code, errors) {
   }
 }
 
+/**
+ * 1. 缓存编译结果，声明cache常量
+ * 2. 调用 compile 函数将模板字符串 转换成渲染字符串
+ * 3. 调用 createFunction 函数将 渲染函数字符串转成真正的渲染函数
+ * 4. 打印编译错误，包括， 模板字符串 ---> 渲染函数字符串 以及 渲染函数字符串 --> 渲染函数这两个阶段的错误
+ *
+ * @export
+ * @param {Function} compile
+ * @return {*}  {Function}
+ */
 export function createCompileToFunctionFn (compile: Function): Function {
   const cache = Object.create(null)
 
@@ -36,6 +46,9 @@ export function createCompileToFunctionFn (compile: Function): Function {
       try {
         new Function('return 1')
       } catch (e) {
+        // 如果安全等级比较高，会出现报错
+        // 1. 放款编译
+        // 2. 预编译
         if (e.toString().match(/unsafe-eval|CSP/)) {
           warn(
             'It seems you are using the standalone build of Vue.js in an ' +
@@ -49,6 +62,7 @@ export function createCompileToFunctionFn (compile: Function): Function {
     }
 
     // check cache
+    // 缓存字符串的编译结果
     const key = options.delimiters
       ? String(options.delimiters) + template
       : template
@@ -57,6 +71,8 @@ export function createCompileToFunctionFn (compile: Function): Function {
     }
 
     // compile
+    // compile 函数编译模板字符串后所得到的是字符串形式的函数体
+    // compiled 除了包含 render 字符串外，还包含一个字符串数组 staticRenderFns，且这个字符串数组最终也通过 createFunction 转为函数
     const compiled = compile(template, options)
 
     // check compilation errors/tips
@@ -90,6 +106,7 @@ export function createCompileToFunctionFn (compile: Function): Function {
     // turn code into functions
     const res = {}
     const fnGenErrors = []
+    // 通过createFunction 拿到render
     res.render = createFunction(compiled.render, fnGenErrors)
     res.staticRenderFns = compiled.staticRenderFns.map(code => {
       return createFunction(code, fnGenErrors)
@@ -99,6 +116,7 @@ export function createCompileToFunctionFn (compile: Function): Function {
     // this should only happen if there is a bug in the compiler itself.
     // mostly for codegen development use
     /* istanbul ignore if */
+    // 编译器本身的错误
     if (process.env.NODE_ENV !== 'production') {
       if ((!compiled.errors || !compiled.errors.length) && fnGenErrors.length) {
         warn(
