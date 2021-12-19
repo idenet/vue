@@ -205,6 +205,7 @@ export function mountComponent (
   } else {
     //把渲染函数生成的虚拟DOM渲染成真正的DOM
     updateComponent = () => {
+      // vm._render() --> vm.$createElement -> createElement ---> vnode | createComponent --> vnode
       vm._update(vm._render(), hydrating)
     }
   }
