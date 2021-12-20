@@ -5,27 +5,34 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>global-comp</title>
+  <title>createElm-comp</title>
   <script src="../../dist/vue.js"></script>
 </head>
 
 <body>
   <div id="app">
-    <global-component></global-component>
+    <div>23432</div>
+    <!--子组件的 占位符vnode 就是parentvnode 最后会被真vnode替换 -->
+    <!-- vm.$vnode 是子组件的占位vnode -->
+    <!-- vm._vnode = vnode 是渲染根vnode vm._vnode.parent = vm.$vnode -->
+    <createElm-component></createElm-component>
   </div>
   <script>
-    // 如果用 Vue.component定义子组件，在
-    // global assets的时候 通过Vue.extend 构造了子组件构造函数
-    Vue.component('global-component', {
+
+    var comp = {
+      name: 'createElm-component',
       data: function () {
         return {
           info: 'global-comp'
         }
       },
       template: `<button>{{info}}</button>`
-    })
+    }
     var vm = new Vue({
       el: '#app',
+      render(h) {
+        return h(comp)
+      }
     })
   </script>
 </body>

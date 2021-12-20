@@ -18,28 +18,35 @@ export function initExtend (Vue: GlobalAPI) {
    */
   Vue.extend = function (extendOptions: Object): Function {
     extendOptions = extendOptions || {}
+    // super= Vue
     const Super = this
     const SuperId = Super.cid
+    // 缓存相关
     const cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {})
+    // 如果有缓存 直接拿缓存的数据
     if (cachedCtors[SuperId]) {
       return cachedCtors[SuperId]
     }
-
+    // 组件name
     const name = extendOptions.name || Super.options.name
     if (process.env.NODE_ENV !== 'production' && name) {
       validateComponentName(name)
     }
-
+    // 定义了Sub构造函数
     const Sub = function VueComponent (options) {
+      // 这里调用的是 Vue.prototype._init
       this._init(options)
     }
+    // 将Sub的原型指向了Vue的原型
     Sub.prototype = Object.create(Super.prototype)
+    // 将Sub的原型上的构造函数指向了他本身
     Sub.prototype.constructor = Sub
     Sub.cid = cid++
     Sub.options = mergeOptions(
       Super.options,
       extendOptions
     )
+    // 将子组件super 指向父组件
     Sub['super'] = Super
 
     // For props and computed properties, we define the proxy getters on
@@ -75,6 +82,7 @@ export function initExtend (Vue: GlobalAPI) {
     Sub.sealedOptions = extend({}, Sub.options)
 
     // cache constructor
+    // 缓存当前构造好的子组件
     cachedCtors[SuperId] = Sub
     return Sub
   }

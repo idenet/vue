@@ -1,5 +1,21 @@
 /* @flow */
 
+
+/**
+ * 如果是组件
+ * {
+ *  tag: vue-component-cid-name
+ *  data: data,
+ *  children: undefined,
+ *  text: undefined,
+ *  elm: undefined,
+ *  context: context,
+ *  componentOptions: { Ctor, propsData, listeners, tag, children },
+ *  asyncFactory:asyncFactory
+ * }
+ *
+ *
+ */
 export default class VNode {
   tag: string | void;
   data: VNodeData | void;

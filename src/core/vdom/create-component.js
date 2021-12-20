@@ -44,6 +44,7 @@ const componentVNodeHooks = {
       const mountedNode: any = vnode // work around flow
       componentVNodeHooks.prepatch(mountedNode, mountedNode)
     } else {
+      // 返回vm 实例
       const child = vnode.componentInstance = createComponentInstanceForVnode(
         vnode,
         activeInstance
@@ -108,11 +109,12 @@ export function createComponent (
   if (isUndef(Ctor)) {
     return
   }
-
+  // baseCtor =  Vue
   const baseCtor = context.$options._base
 
   // plain options object: turn it into a constructor
   if (isObject(Ctor)) {
+    // 通过extend 生成构造器
     Ctor = baseCtor.extend(Ctor)
   }
 
@@ -126,6 +128,7 @@ export function createComponent (
   }
 
   // async component
+  // 异步组件
   let asyncFactory
   if (isUndef(Ctor.cid)) {
     asyncFactory = Ctor
@@ -183,10 +186,12 @@ export function createComponent (
   }
 
   // install component management hooks onto the placeholder node
+  // 安装组件钩子
   installComponentHooks(data)
 
   // return a placeholder vnode
   const name = Ctor.options.name || tag
+  // 生成一个vnode
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
     data, undefined, undefined, undefined, context,
@@ -209,12 +214,12 @@ export function createComponentInstanceForVnode (
   // we know it's MountedComponentVNode but flow doesn't
   vnode: any,
   // activeInstance in lifecycle state
-  parent: any
+  parent: any // 当前vm实例
 ): Component {
   const options: InternalComponentOptions = {
     _isComponent: true,
-    _parentVnode: vnode,
-    parent
+    _parentVnode: vnode, // 放了当前的组件节点
+    parent // 父组件
   }
   // check inline-template render functions
   const inlineTemplate = vnode.data.inlineTemplate
@@ -222,21 +227,29 @@ export function createComponentInstanceForVnode (
     options.render = inlineTemplate.render
     options.staticRenderFns = inlineTemplate.staticRenderFns
   }
+  // 实例化组件
   return new vnode.componentOptions.Ctor(options)
 }
 
 function installComponentHooks (data: VNodeData) {
   const hooks = data.hook || (data.hook = {})
+  // hooksToMerge = {init, prepatch, insert, destroy}
   for (let i = 0; i < hooksToMerge.length; i++) {
     const key = hooksToMerge[i]
     const existing = hooks[key]
+    // 值
     const toMerge = componentVNodeHooks[key]
     if (existing !== toMerge && !(existing && existing._merged)) {
       hooks[key] = existing ? mergeHook(toMerge, existing) : toMerge
     }
   }
 }
-
+/**
+ * (init1, init2) => {
+ *  init1(),
+ *  init2()
+ * }
+ */
 function mergeHook (f1: any, f2: any): Function {
   const merged = (a, b) => {
     // flow complains about extra args which is why we use any

@@ -92,7 +92,9 @@ export function initMixin (Vue: Class<Component>) {
 export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
   const opts = vm.$options = Object.create(vm.constructor.options)
   // doing this because it's faster than dynamic enumeration.
+  // 占位符vnode 即组件的标签
   const parentVnode = options._parentVnode
+  // 子组件的父vm实例
   opts.parent = options.parent
   opts._parentVnode = parentVnode
 
