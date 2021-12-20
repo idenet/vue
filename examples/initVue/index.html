@@ -11,7 +11,7 @@
 
 <body>
   <div id="app">
-    <button>{{compA}}</button>
+    {{a}}
   </div>
   <script>
     let vm = new Vue({
@@ -20,26 +20,6 @@
         a: 1,
         b: 2
       },
-      computed: {
-        compA() {
-          return this.a +this.b
-        }
-      },
-      watch: {
-        a:'functiona'
-      },
-      created() {
-        this.$watch(() => {
-          return [this.a, this.b]
-        }, () => {
-          console.log('ab被执行了')
-        })
-      },
-      methods: {
-        functiona() {
-          console.log('a, b 被执行了')
-        }
-      }
     })
   </script>
 </body>
