@@ -27,6 +27,15 @@ function ensureCtor (comp: any, base) {
     : comp
 }
 
+/**
+ * 创建一个空的vnode
+ * @param {*} factory
+ * @param {*} data
+ * @param {*} context
+ * @param {*} children
+ * @param {*} tag
+ * @returns
+ */
 export function createAsyncPlaceholder (
   factory: Function,
   data: ?VNodeData,
@@ -39,7 +48,12 @@ export function createAsyncPlaceholder (
   node.asyncMeta = { data, context, children, tag }
   return node
 }
-
+/**
+ * 解析异步组件
+ * @param {*} factory
+ * @param {*} baseCtor
+ * @returns
+ */
 export function resolveAsyncComponent (
   factory: Function,
   baseCtor: Class<Component>
@@ -99,7 +113,7 @@ export function resolveAsyncComponent (
         owners.length = 0
       }
     })
-
+    // 用回调函数的方式
     const reject = once(reason => {
       process.env.NODE_ENV !== 'production' && warn(
         `Failed to resolve async component: ${String(factory)}` +
@@ -112,7 +126,7 @@ export function resolveAsyncComponent (
     })
 
     const res = factory(resolve, reject)
-
+    // 如果是一个promise
     if (isObject(res)) {
       if (isPromise(res)) {
         // () => Promise
