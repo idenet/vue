@@ -189,7 +189,7 @@ function mergeHook (
   const res = childVal
     ? parentVal
       ? parentVal.concat(childVal)
-      // 可传入 数组的 hooks
+      // 可传入 数组的 hooks  最后的返回值一定是数组
       : Array.isArray(childVal)
         ? childVal
         : [childVal]
