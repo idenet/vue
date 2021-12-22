@@ -191,6 +191,7 @@ export default class Watcher {
     // 首先获取上次dep的长度
     let i = this.deps.length
     while (i--) {
+      // 有时候新的已经不监听旧的属性了，这时候就需要删除旧属性的watcher
       // 循环查找dep在newdepids是否不存在
       const dep = this.deps[i]
       if (!this.newDepIds.has(dep.id)) {
