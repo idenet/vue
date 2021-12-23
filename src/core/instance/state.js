@@ -320,9 +320,11 @@ function createComputedGetter (key) {
     if (watcher) {
       // dirty = lazy = true
       // 执行了 this.get 对 计算属性里的方法的data值做了一次依赖
+      // 求值运算 计算watcher
       if (watcher.dirty) {
         watcher.evaluate()
       }
+      // 渲染watcher
       if (Dep.target) {
         watcher.depend()
       }
