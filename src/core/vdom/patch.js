@@ -72,13 +72,14 @@ function createKeyToOldIdx (children, beginIdx, endIdx) {
 export function createPatchFunction (backend) {
   let i, j
   const cbs = {}
-
+  // vnode方法和原生dom方法
   const { modules, nodeOps } = backend
-
+  // 遍历hooks
   for (i = 0; i < hooks.length; ++i) {
     cbs[hooks[i]] = []
     for (j = 0; j < modules.length; ++j) {
       if (isDef(modules[j][hooks[i]])) {
+        // 将dom的hook 添加到 cbs的hooks中 create update
         cbs[hooks[i]].push(modules[j][hooks[i]])
       }
     }
@@ -191,10 +192,13 @@ export function createPatchFunction (backend) {
           insert(parentElm, vnode.elm, refElm)
         }
       } else {
+        // 递归创建子节点
         createChildren(vnode, children, insertedVnodeQueue)
         if (isDef(data)) {
+          // 执行createhook
           invokeCreateHooks(vnode, insertedVnodeQueue)
         }
+        // 插入真实节点
         insert(parentElm, vnode.elm, refElm)
       }
 
@@ -232,7 +236,7 @@ export function createPatchFunction (backend) {
       }
     }
   }
-
+  // 初始化创建组件的时候
   function initComponent (vnode, insertedVnodeQueue) {
     if (isDef(vnode.data.pendingInsert)) {
       insertedVnodeQueue.push.apply(insertedVnodeQueue, vnode.data.pendingInsert)
@@ -554,6 +558,7 @@ export function createPatchFunction (backend) {
     const oldCh = oldVnode.children
     const ch = vnode.children
     if (isDef(data) && isPatchable(vnode)) {
+      // 新旧节点比较的时候，会调用 update
       for (i = 0; i < cbs.update.length; ++i) cbs.update[i](oldVnode, vnode)
       if (isDef(i = data.hook) && isDef(i = i.update)) i(oldVnode, vnode)
     }

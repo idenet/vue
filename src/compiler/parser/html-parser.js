@@ -183,7 +183,8 @@ export function parseHTML (html, options) {
     index += n
     html = html.substring(n)
   }
-
+  // 匹配成功返回对象
+  // z在匹配过程中，调用advance 方法截取开始标签
   function parseStartTag () {
     const start = html.match(startTagOpen)
     if (start) {
@@ -246,7 +247,7 @@ export function parseHTML (html, options) {
       stack.push({ tag: tagName, lowerCasedTag: tagName.toLowerCase(), attrs: attrs, start: match.start, end: match.end })
       lastTag = tagName
     }
-
+    // 调用钩子函数
     if (options.start) {
       options.start(tagName, attrs, unary, match.start, match.end)
     }

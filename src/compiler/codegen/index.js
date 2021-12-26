@@ -80,7 +80,7 @@ export function genElement (el: ASTElement, state: CodegenState): string {
       if (!el.plain || (el.pre && state.maybeComponent(el))) {
         data = genData(el, state)
       }
-
+    // 生成gen代码
       const children = el.inlineTemplate ? null : genChildren(el, state, true)
       code = `_c('${el.tag}'${
         data ? `,${data}` : '' // data
@@ -97,6 +97,7 @@ export function genElement (el: ASTElement, state: CodegenState): string {
 }
 
 // hoist static sub-trees out
+// 静态根节点代码生成的render存放在staticRenderFns中，而不是render
 function genStatic (el: ASTElement, state: CodegenState): string {
   el.staticProcessed = true
   // Some elements (templates) need to behave differently inside of a v-pre
