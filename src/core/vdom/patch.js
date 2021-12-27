@@ -525,7 +525,9 @@ export function createPatchFunction (backend) {
       vnode = ownerArray[index] = cloneVNode(vnode)
     }
 
+    // 拿到节点
     const elm = vnode.elm = oldVnode.elm
+
 
     if (isTrue(oldVnode.isAsyncPlaceholder)) {
       if (isDef(vnode.asyncFactory.resolved)) {
@@ -550,11 +552,12 @@ export function createPatchFunction (backend) {
     }
 
     let i
+    // 如果vnode是组件vnode  执行 prepatch方法
     const data = vnode.data
     if (isDef(data) && isDef(i = data.hook) && isDef(i = i.prepatch)) {
       i(oldVnode, vnode)
     }
-
+    // 拿到新旧节点的children
     const oldCh = oldVnode.children
     const ch = vnode.children
     if (isDef(data) && isPatchable(vnode)) {
@@ -571,13 +574,16 @@ export function createPatchFunction (backend) {
           checkDuplicateKeys(ch)
         }
         if (isDef(oldVnode.text)) nodeOps.setTextContent(elm, '')
+        // 传入新节点
         addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue)
       } else if (isDef(oldCh)) {
+        // 删除老节点
         removeVnodes(oldCh, 0, oldCh.length - 1)
       } else if (isDef(oldVnode.text)) {
         nodeOps.setTextContent(elm, '')
       }
     } else if (oldVnode.text !== vnode.text) {
+      // 文本跟新
       nodeOps.setTextContent(elm, vnode.text)
     }
     if (isDef(data)) {
@@ -726,7 +732,7 @@ export function createPatchFunction (backend) {
       const isRealElement = isDef(oldVnode.nodeType)
       // 判断新旧节点是否相同
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
-        // patch existing root node
+        // patch existing root node 相当节点啧进行相同节点比较
         patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly)
       } else {
         if (isRealElement) {
@@ -757,10 +763,12 @@ export function createPatchFunction (backend) {
         }
 
         // replacing existing element
+        // 拿到父节点
         const oldElm = oldVnode.elm
         const parentElm = nodeOps.parentNode(oldElm)
 
         // create new node
+        // 创建节点
         createElm(
           vnode,
           insertedVnodeQueue,
@@ -775,11 +783,13 @@ export function createPatchFunction (backend) {
         // update parent placeholder node element, recursively
         if (isDef(vnode.parent)) {
           let ancestor = vnode.parent
+          // 找到一个可挂载的节点
           const patchable = isPatchable(vnode)
           while (ancestor) {
             for (let i = 0; i < cbs.destroy.length; ++i) {
               cbs.destroy[i](ancestor)
             }
+            // 将新节点更新到父节点
             ancestor.elm = vnode.elm
             if (patchable) {
               for (let i = 0; i < cbs.create.length; ++i) {
@@ -798,11 +808,13 @@ export function createPatchFunction (backend) {
             } else {
               registerRef(ancestor)
             }
+            // 循环 继续向上找
             ancestor = ancestor.parent
           }
         }
 
         // destroy old node
+        // 删除旧节点
         if (isDef(parentElm)) {
           removeVnodes([oldVnode], 0, 0)
         } else if (isDef(oldVnode.tag)) {
