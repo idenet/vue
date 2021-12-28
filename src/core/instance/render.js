@@ -75,7 +75,7 @@ export function renderMixin (Vue: Class<Component>) {
     const vm: Component = this
     // 通过规整化好后的 $options拿到 渲染函数
     const { render, _parentVnode } = vm.$options
-
+    // 拿到$scopeSlots
     if (_parentVnode) {
       vm.$scopedSlots = normalizeScopedSlots(
         _parentVnode.data.scopedSlots,

@@ -33,6 +33,7 @@ export function installRenderHelpers (target: any) {
   target._v = createTextVNode
   // 创建空vnode
   target._e = createEmptyVNode
+  // 解析作用于插槽
   target._u = resolveScopedSlots
   target._g = bindObjectListeners
   target._d = bindDynamicKeys
