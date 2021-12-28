@@ -214,6 +214,7 @@ export function parse (
     shouldDecodeNewlinesForHref: options.shouldDecodeNewlinesForHref,
     shouldKeepComment: options.comments,
     outputSourceRange: options.outputSourceRange,
+    // 开始标签钩子
     start (tag, attrs, unary, start, end) {
       // check namespace.
       // inherit parent ns if there is one
@@ -300,7 +301,7 @@ export function parse (
         closeElement(element)
       }
     },
-
+    // 结束标签钩子
     end (tag, start, end) {
       const element = stack[stack.length - 1]
       // pop stack
@@ -311,7 +312,7 @@ export function parse (
       }
       closeElement(element)
     },
-
+    // 文本标签钩子
     chars (text: string, start: number, end: number) {
       if (!currentParent) {
         if (process.env.NODE_ENV !== 'production') {
@@ -383,6 +384,7 @@ export function parse (
         }
       }
     },
+    // 注释标签钩子
     comment (text: string, start, end) {
       // adding anything as a sibling to the root node is forbidden
       // comments should still be allowed, but ignored

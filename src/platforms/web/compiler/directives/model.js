@@ -45,8 +45,10 @@ export default function model (
   } else if (tag === 'input' && type === 'radio') {
     genRadioModel(el, value, modifiers)
   } else if (tag === 'input' || tag === 'textarea') {
+    // 表单 v-model
     genDefaultModel(el, value, modifiers)
   } else if (!config.isReservedTag(tag)) {
+    // 组件v-model
     genComponentModel(el, value, modifiers)
     // component v-model doesn't need extra runtime
     return false

@@ -15,6 +15,7 @@ export const createCompiler = createCompilerCreator(function baseCompile (
   // 解析原始代码并生成AST
   const ast = parse(template.trim(), options)
   if (options.optimize !== false) {
+    // 将ast中的不变代码 标识static
     optimize(ast, options)
   }
   // 根据给定的AST生成目标平台的代码
