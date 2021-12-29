@@ -58,6 +58,7 @@ const patternTypes: Array<Function> = [String, RegExp, Array]
 
 export default {
   name: 'keep-alive',
+  // 抽象组件
   abstract: true,
 
   props: {
@@ -88,6 +89,7 @@ export default {
 
   created () {
     this.cache = Object.create(null)
+    // 保存缓存的 id值
     this.keys = []
   },
 
@@ -112,7 +114,9 @@ export default {
   },
 
   render () {
+    // 拿到默认的子节点
     const slot = this.$slots.default
+    // 拿到第一个组件节点
     const vnode: VNode = getFirstComponentChild(slot)
     const componentOptions: ?VNodeComponentOptions = vnode && vnode.componentOptions
     if (componentOptions) {

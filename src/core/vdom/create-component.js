@@ -78,6 +78,7 @@ const componentVNodeHooks = {
         // change, so directly walking the tree here may call activated hooks
         // on incorrect children. Instead we push them into a queue which will
         // be processed after the whole patch process ended.
+        // 加到 微任务中
         queueActivatedComponent(componentInstance)
       } else {
         activateChildComponent(componentInstance, true /* direct */)
