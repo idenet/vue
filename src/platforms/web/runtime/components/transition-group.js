@@ -65,6 +65,7 @@ export default {
         if (c.key != null && String(c.key).indexOf('__vlist') !== 0) {
           children.push(c)
           map[c.key] = c
+            // 解析出来的data赋值到每一个vnode的transition中
           ;(c.data || (c.data = {})).transition = transitionData
         } else if (process.env.NODE_ENV !== 'production') {
           const opts: ?VNodeComponentOptions = c.componentOptions
@@ -103,8 +104,11 @@ export default {
 
     // we divide the work into three loops to avoid mixing DOM reads and writes
     // in each iteration - which helps prevent layout thrashing.
+    // 确保动画序列执行的稳定性，解决连续点击的问题
     children.forEach(callPendingCbs)
+    // 重新计算新的位置
     children.forEach(recordPosition)
+    // 计算移动位置
     children.forEach(applyTranslation)
 
     // force reflow to put everything in position

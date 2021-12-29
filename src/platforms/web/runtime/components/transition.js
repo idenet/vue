@@ -118,7 +118,7 @@ export default {
         this.$parent
       )
     }
-
+    // 拿到第一个子节点
     const rawChild: VNode = children[0]
 
     // if this is a component root node and the component's
