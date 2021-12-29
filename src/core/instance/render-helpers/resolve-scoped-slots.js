@@ -17,6 +17,7 @@ export function resolveScopedSlots (
       if (slot.proxy) {
         slot.fn.proxy = true
       }
+      // 规整化为 插槽名称：fn
       res[slot.key] = slot.fn
     }
   }
