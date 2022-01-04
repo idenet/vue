@@ -215,6 +215,8 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+
+
   // 创建观察者实例
   // Watcher会对 updateComponent 求值， 而 它会触发_render的执行， 在h函数中会触发在this.xx
   // 这回触发 this._data.xx 其实就是出发了 get拦截器 从而将依赖收集，当数据变化就重新执行updateComponent
