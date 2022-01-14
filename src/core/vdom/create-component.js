@@ -221,8 +221,8 @@ export function createComponentInstanceForVnode (
 ): Component {
   const options: InternalComponentOptions = {
     _isComponent: true,
-    _parentVnode: vnode, // 放了当前的组件节点
-    parent // 父组件
+    _parentVnode: vnode,
+    parent
   }
   // check inline-template render functions
   const inlineTemplate = vnode.data.inlineTemplate

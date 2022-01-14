@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="../../dist/vue.js"></script>
+  </head>
+
+  <body>
+    <div id="app">
+      <app-layout>
+        <template v-slot:header>头部内容</template>
+        <template v-slot>默认内容</template>
+        <template v-slot:footer>底部内容</template>
+      </app-layout>
+      <!-- <button @click="change">change title</button> -->
+    </div>
+    <script>
+      const AppLayout = {
+        template:
+          '<div class="container">' +
+          '<header><slot name="header"></slot></header>' +
+          '<main><slot></slot></main>' +
+          '<footer><slot name="footer"></slot></footer>' +
+          '</div>'
+      }
+
+      const vm = new Vue({
+        el: '#app',
+        // data () {
+        //   return {
+        //     title: '这是slots Title',
+        //     desc: '学习desc'
+        //   }
+        // },
+        // methods: {
+        //   change () {
+        //     this.title = '23432'
+        //   }
+        // },
+        components: {
+          AppLayout
+        }
+      })
+    </script>
+  </body>
+</html>

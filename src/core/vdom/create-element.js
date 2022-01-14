@@ -56,8 +56,8 @@ export function _createElement (
   // vode 不能是 响应式节点
   if (isDef(data) && isDef((data: any).__ob__)) {
     process.env.NODE_ENV !== 'production' && warn(
-      `Avoid using observed data object as vnode data: ${JSON.stringify(data)}\n` +
-      'Always create fresh vnode data objects in each render!',
+      `Avoid using observed data object as vnode data: ${JSON.stringify(data)}
+      Always create fresh vnode data objects in each render!`,
       context
     )
     return createEmptyVNode()

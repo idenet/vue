@@ -294,6 +294,7 @@ export default class Watcher {
       // remove self from vm's watcher list
       // this is a somewhat expensive operation so we skip it
       // if the vm is being destroyed.
+
       // 在组件没有被销毁时，移除所有的watcher对象
       if (!this.vm._isBeingDestroyed) {
         remove(this.vm._watchers, this)
